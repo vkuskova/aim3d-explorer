@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIM-3D Explorer — Causal Structure of Democratic Development</title>
+<meta name="description" content="Interactive explorer for the AIM-3D Lab's neural causal analysis of V-Dem democracy data: consensus causal graphs, function-valued effects, dynamic stability, and model-implied trajectories.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="brand">
+      <span class="brand-eyebrow">AIM-3D Lab · University of Notre Dame</span>
+      <h1 class="brand-title">Causal Structure of Democratic Development</h1>
+      <p class="brand-sub">Neural additive causal discovery on V-Dem panel data — consensus graphs, function-valued effects, and dynamic stability, served from committed pipeline artifacts.</p>
+    </div>
+    <div class="panel-switch" role="group" aria-label="Panel selection">
+      <button class="panel-tag" id="tag-century" data-panel="century_factors">
+        <span class="tag-name">Century view</span>
+        <span class="tag-meta">1900–2023 · 29 nodes · V-Dem</span>
+      </button>
+      <button class="panel-tag" id="tag-modern" data-panel="modern_factors">
+        <span class="tag-name">Modern view</span>
+        <span class="tag-meta">1970–2021 · 47 nodes · V-Dem + covariates</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="frame">
+  <nav class="rail" aria-label="Views">
+    <a href="#structure" class="rail-link" data-view="structure">Structure</a>
+    <a href="#edges" class="rail-link" data-view="edges">Edges</a>
+    <a href="#ice" class="rail-link" data-view="ice">Effect curves</a>
+    <a href="#dynamics" class="rail-link" data-view="dynamics">Dynamics</a>
+    <a href="#trajectories" class="rail-link" data-view="trajectories">Trajectories</a>
+    <a href="#methods" class="rail-link" data-view="methods">Methods &amp; data</a>
+  </nav>
+
+  <main class="stage" id="stage" tabindex="-1">
+    <div class="loading" id="loading">Loading panel data…</div>
+
+    <section class="view" id="view-structure" hidden>
+      <div class="view-head">
+        <span class="eyebrow">Consensus causal graph</span>
+        <h2>Adjacency matrix</h2>
+        <p class="view-lede">Rows are sources, columns are targets. Cell depth encodes the median NAVAR causal score across the three-seed ensemble. The default set is the <strong>consensus graph</strong> — edges retained in all three seeds. Select any node label to inspect its neighborhood.</p>
+      </div>
+      <div class="controls-row">
+        <label class="ctl-toggle"><input type="checkbox" id="matrix-majority"> Show majority edges (2/3 seeds, faded)</label>
+        <span class="legend-inline" id="matrix-legend"></span>
+      </div>
+      <div class="matrix-wrap" id="matrix-wrap"></div>
+      <aside class="ego" id="ego-panel" hidden></aside>
+    </section>
+
+    <section class="view" id="view-edges" hidden>
+      <div class="view-head">
+        <span class="eyebrow">Edge inventory</span>
+        <h2>Retained edges</h2>
+        <p class="view-lede">Every edge in the majority-retained set, with seed retention, ensemble score statistics, and consensus status. Scores are median [min – max] across seeds.</p>
+      </div>
+      <div class="controls-row">
+        <label class="ctl-toggle"><input type="checkbox" id="edges-consensus-only" checked> Consensus only (all 3 seeds)</label>
+        <input type="search" id="edges-search" class="ctl-search" placeholder="Filter by node id or label…" aria-label="Filter edges">
+      </div>
+      <div class="table-wrap"><table class="data-table" id="edges-table"></table></div>
+    </section>
+
+    <section class="view" id="view-ice" hidden>
+      <div class="view-head">
+        <span class="eyebrow">Function-valued causal influence</span>
+        <h2>Effect curves</h2>
+        <p class="view-lede">For each consensus edge: the estimated effect of moving the source across its observed range, evaluated in three democracy regimes (terciles of the outcome). Both axes are in standardized units.</p>
+      </div>
+      <div class="controls-row">
+        <label class="ctl-label" for="ice-edge">Edge</label>
+        <select id="ice-edge" class="ctl-select" aria-label="Select edge"></select>
+      </div>
+      <div class="chart-card"><svg id="ice-chart" class="chart" role="img" aria-label="Effect curves by regime"></svg>
+        <div class="chart-legend" id="ice-legend"></div>
+      </div>
+      <p class="footnote" id="ice-note"></p>
+    </section>
+
+    <section class="view" id="view-dynamics" hidden>
+      <div class="view-head">
+        <span class="eyebrow">DCNAR dynamic inference</span>
+        <h2>Stability and impulse responses</h2>
+        <p class="view-lede" id="dynamics-lede"></p>
+      </div>
+
+      <h3 class="block-title">Nodal influence trajectories (λ paths)</h3>
+      <div class="controls-row">
+        <span class="ctl-label">Series</span>
+        <div class="chip-row" id="lambda-chips"></div>
+      </div>
+      <div class="chart-card"><svg id="lambda-chart" class="chart" role="img" aria-label="Lambda paths"></svg></div>
+
+      <h3 class="block-title">Spectral radius ρ(τ)</h3>
+      <div class="chart-card"><svg id="rho-chart" class="chart" role="img" aria-label="Spectral radius over tau"></svg>
+        <div class="chart-legend" id="rho-legend"></div>
+      </div>
+      <p class="footnote" id="rho-note"></p>
+
+      <h3 class="block-title" id="irf-title">Impulse responses</h3>
+      <div class="irf-wrap" id="irf-wrap"></div>
+      <p class="footnote" id="irf-note"></p>
+    </section>
+
+    <section class="view" id="view-trajectories" hidden>
+      <div class="view-head">
+        <span class="eyebrow">Model-implied trajectories</span>
+        <h2>Country trajectories</h2>
+        <p class="view-lede">These are <strong>model-implied trajectories</strong>, not predictions. The band is the ensemble min–max across three seeds; the grey dashed line is a persistence reference (last observed value carried forward). Horizons beyond 5 years are unvalidated and drawn faded.</p>
+      </div>
+      <div class="controls-row">
+        <label class="ctl-label" for="traj-country">Country</label>
+        <select id="traj-country" class="ctl-select" aria-label="Select country"></select>
+        <label class="ctl-label" for="traj-node">Node</label>
+        <select id="traj-node" class="ctl-select" aria-label="Select node"></select>
+        <button class="btn-quiet" id="btn-validation" aria-expanded="false">Validation table</button>
+      </div>
+      <div class="chart-card"><svg id="traj-chart" class="chart chart-tall" role="img" aria-label="Model-implied trajectory"></svg>
+        <div class="chart-legend" id="traj-legend"></div>
+      </div>
+      <p class="footnote" id="traj-note"></p>
+      <div class="validation-block" id="validation-block" hidden></div>
+    </section>
+
+    <section class="view" id="view-methods" hidden>
+      <div class="view-head">
+        <span class="eyebrow">Provenance</span>
+        <h2>Methods &amp; data</h2>
+      </div>
+      <div id="methods-body"></div>
+    </section>
+  </main>
+</div>
+
+<footer class="site-foot">
+  <p>Data: V-Dem v15 (DOI 10.23696/vdemds25) · Analysis: AIM-3D Lab, Lucy Family Institute for Data &amp; Society, University of Notre Dame. All displayed values are read from committed pipeline artifacts; the portal computes no new statistics.</p>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
