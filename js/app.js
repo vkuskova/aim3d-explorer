@@ -1,4 +1,4 @@
-/* AIM-3D Explorer — static results explorer.
+/* AIM-3D Explorer — static results explorer. BUILD v12 (2026-08-24)
    Data contract: reads pipeline export bundles verbatim; computes no new
    statistics. The only client-side derivations permitted by the build
    brief: persistence overlay (last observed value carried forward) and
@@ -6,6 +6,9 @@
 "use strict";
 
 /* ───────────────────────── State ───────────────────────── */
+
+const BUILD = "v12";
+const BUILD_DATE = "2026-08-24";
 
 const PANELS = {
   century_factors: { name: "Century view", span: "1900–2023" },
@@ -987,6 +990,8 @@ function init() {
   document.querySelectorAll(".panel-tag").forEach((b) =>
     b.classList.toggle("active", b.dataset.panel === S.panel));
   attachTermTooltips();
+  const stamp = document.getElementById("build-stamp");
+  if (stamp) stamp.textContent = `Explorer build ${BUILD} · ${BUILD_DATE}`;
   showView(location.hash.slice(1) || "structure");
 }
 

@@ -556,3 +556,11 @@ select:focus-visible, input:focus-visible, a:focus-visible {
   margin: 0 0 6px;
 }
 .guide-entry p { margin: 0; font-size: 13.5px; max-width: 760px; }
+
+.build-stamp {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--line);
+}
