@@ -442,6 +442,9 @@ select:focus-visible, input:focus-visible, a:focus-visible {
   box-shadow: 0 3px 14px rgba(22,35,59,0.3);
 }
 #asst-launcher:hover { background: var(--blue-deep); }
+/* Must outrank the UA rule [hidden]{display:none}: an ID selector setting
+   display would otherwise keep the drawer visible when hidden is set. */
+#asst-drawer[hidden] { display: none; }
 #asst-drawer {
   position: fixed;
   right: 22px;
