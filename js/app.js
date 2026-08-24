@@ -99,7 +99,7 @@ function annotateTerms(container) {
 function annotateView(viewId) {
   const view = document.getElementById(viewId);
   if (!view) return;
-  view.querySelectorAll(".view-lede, .footnote, .block-title").forEach((el) => {
+  view.querySelectorAll(".view-lede, .footnote, .block-title, .methods-card p, .methods-card li").forEach((el) => {
     delete el.dataset.termified; // footnotes are rewritten per render
     annotateTerms(el);
   });
@@ -798,53 +798,120 @@ function renderMethods() {
   const p = m.provenance;
   const st = p.stability;
   const fmeta = p.forecasts;
+  const dm = d.dcnar.meta;
+  const isModern = S.panel === "modern_factors";
+
+  // Node composition, counted from the bundle.
+  const kinds = {};
+  d.nodes.forEach((n) => (kinds[n.kind] = (kinds[n.kind] || 0) + 1));
+  const nStructural = d.nodes.filter(isStructural).length;
+  const shockNode = nodeById(d)[dm.shock_var];
+  const shockLabel = shockNode ? shockNode.label : dm.shock_var;
+
+  const kindLine = Object.entries(kinds)
+    .sort((a, b) => (KIND_ORDER[a[0]] - KIND_ORDER[b[0]]))
+    .map(([k, v]) => `${v} ${(KIND_LABEL[k] || k).toLowerCase()}${v > 1 ? "s" : ""}`)
+    .join(" · ");
 
   $("methods-body").innerHTML = `
     <div class="methods-card">
-      <h3>Panel</h3>
+      <h3>What this analysis does</h3>
+      <p>The pipeline asks a structural question about democratic development: within countries over time, which features of a political system carry predictive information about which others, how do those relationships change across the historical record, and do they operate differently in autocracies than in established democracies. It proceeds in six stages, each one committing artifacts that the next stage consumes and that this portal serves without recomputation.</p>
+      <p>Two design commitments run through all of it. First, every reported quantity comes from a stored artifact rather than a re-estimation, so what is displayed here is what the papers report. Second, results that do not favor the model are reported alongside those that do: the forecast validation table below is the clearest instance.</p>
+    </div>
+
+    <div class="methods-card">
+      <h3>Stage 1 — Panel construction</h3>
       <dl class="methods-kv">
-        <dt>panel</dt><dd>${esc(m.panel)} — ${esc(PANELS[S.panel].name)}, ${esc(PANELS[S.panel].span)}</dd>
+        <dt>panel</dt><dd>${esc(m.panel)} — ${esc(PANELS[S.panel].name)}</dd>
+        <dt>coverage</dt><dd>${m.panel_meta.n_rows.toLocaleString()} country-years · ${m.panel_meta.n_countries} countries · ${m.panel_meta.years[0]}–${m.panel_meta.years[1]}</dd>
+        <dt>lag structure</dt><dd>maxlags = ${m.panel_meta.maxlags} · ${m.panel_meta.usable_windows.toLocaleString()} usable estimation windows</dd>
         <dt>generated</dt><dd>${esc(m.generated)}</dd>
-        <dt>observations</dt><dd>${m.panel_meta.n_rows.toLocaleString()} country-years · ${m.panel_meta.n_countries} countries · ${m.panel_meta.years[0]}–${m.panel_meta.years[1]}</dd>
-        <dt>lag structure</dt><dd>maxlags = ${m.panel_meta.maxlags} · ${m.panel_meta.usable_windows.toLocaleString()} usable windows</dd>
-        <dt>graph</dt><dd>${m.n_nodes} nodes · ${m.n_edges_majority} majority edges · ${m.n_edges_consensus} consensus edges · ${m.n_edges_aggregation_adjacent} aggregation-adjacent</dd>
       </dl>
+      <p>Estimation uses only within-country variation over time. A usable window is a country-year with a complete history over the lag structure; the count above is what actually enters estimation after that requirement, which is smaller than the raw country-year count. Variables are standardized before estimation, so all quantities except the polyarchy trajectory display are in standard-deviation units.</p>
     </div>
+
     <div class="methods-card">
-      <h3>Measurement model</h3>
+      <h3>Stage 2 — Measurement model</h3>
+      <p>V-Dem measures several concepts with many strongly correlated indicators. Entering them individually creates near-collinear families that destabilize estimation, so related indicators are summarized before the causal stage. Groups are reduced by exploratory factor analysis with maximum-likelihood extraction and varimax rotation; the number of factors is chosen by parallel analysis rather than fixed in advance, indicators are assigned to a factor at a salience threshold of θ = 0.50, and factor scores are computed as groupwise BLUP. Items recorded as shares across categories are compositional rather than reflective, and are handled separately as additive log-ratio mean composites.</p>
+      <p>The electoral democracy index is protected: it always enters as an observed variable and is never absorbed into a factor. This panel resolves to ${m.n_nodes} nodes — ${esc(kindLine)}.</p>
       <div class="prov">${esc(p.measurement)}</div>
+      ${nStructural
+        ? `<p>Of these, <strong>${nStructural} nodes are structural (source-only)</strong>: their between-country variance dominates their within-country variance, measured by the intraclass correlation, leaving too little within-country signal to identify what affects them. They act as sources only, and their target columns are greyed in the Structure view. This is a statement about identifiability, not a finding that nothing affects them.</p>`
+        : `<p>In this panel every node retains enough within-country variation to serve as both source and target, so there are no structural source-only nodes.</p>`}
     </div>
+
     <div class="methods-card">
-      <h3>Edge selection</h3>
-      <div class="prov">${esc(p.edge_selection)}</div>
-    </div>
-    <div class="methods-card">
-      <h3>Dynamic stability</h3>
+      <h3>Stage 3 — Causal discovery</h3>
+      <p>Structure is learned with a masked neural additive vector autoregression. Each variable is predicted from the recent past of all variables, with each source's contribution modeled as a separate learned nonlinear function; the additive form is what makes per-edge contributions measurable rather than entangled in a single black box.</p>
+      <p>Three concerns shape edge selection. Because neural fits depend on initialization, the whole estimation is repeated across a ${dm.active_w.includes("3") ? "three" : "multi"}-seed ensemble and only edges surviving in a majority of seeds are retained, with those surviving in all seeds marked consensus and treated as canonical. Because causal scores are not regression coefficients and have no known sampling distribution, classical significance testing does not apply; edges are instead assessed by <em>forecast necessity</em> — an edge is ablated and the resulting loss in out-of-sample forecast accuracy is tested with a Diebold–Mariano comparison, with Benjamini–Hochberg control at q = 0.05 across the edge set. Because score magnitude alone is a fragile criterion, the retention threshold is set by a Gaussian mixture on the score distribution, with the search restricted to the interval between component means.</p>
       <dl class="methods-kv">
-        <dt>mode</dt><dd>${esc(st.mode)} (ε = ${st.epsilon_used})</dd>
+        <dt>retained edges</dt><dd>${m.n_edges_majority} majority (2 of 3 seeds) · <strong>${m.n_edges_consensus} consensus</strong> (all 3 seeds)</dd>
+        <dt>flagged</dt><dd>${m.n_edges_aggregation_adjacent} aggregation-adjacent</dd>
+      </dl>
+      <div class="prov">${esc(p.edge_selection)}</div>
+      <p>The ${m.n_edges_aggregation_adjacent} flagged edges have sources containing a component from which the polyarchy index is computed. They are correct model structure and are shown, but an amber badge marks them throughout the portal because reading them as discovered causal drivers would confuse the arithmetic of the index with a substantive finding.</p>
+    </div>
+
+    <div class="methods-card">
+      <h3>Stage 4 — Dynamic inference</h3>
+      <p>The consensus graph fixes which links exist; a second stage asks how the system's dynamics evolved along them. A time-varying network autoregression is fitted on the consensus edge set, with coefficients estimated locally in normalized time τ by kernel weighting, yielding a nodal influence trajectory (λ) for each variable and a spectral radius series summarizing stability.</p>
+      <dl class="methods-kv">
+        <dt>active structure</dt><dd>${esc(dm.active_w)}</dd>
+        <dt>local estimation</dt><dd>${dm.tvnar.kernel} kernel · bandwidth ${dm.tvnar.bandwidth} · ${dm.tvnar.grid_size}-point τ grid · ridge ${dm.tvnar.ridge} · τ ${esc(dm.tvnar.tau_mode.replace("_", "-"))}</dd>
+        <dt>effective sample</dt><dd>median ${Math.round(dm.eff_sample_median).toLocaleString()} · minimum ${Math.round(dm.eff_sample_min).toLocaleString()} across the τ grid</dd>
+        <dt>stability mode</dt><dd>${esc(st.mode)}, ε = ${st.epsilon_used}</dd>
         <dt>ρ constrained</dt><dd class="mono">τ=1: ${fmt(st.rho_tau1, 6)} · grid max: ${fmt(st.rho_max, 6)}</dd>
         <dt>ρ unconstrained</dt><dd class="mono">τ=1: ${fmt(st.rho_tau1_unconstrained, 6)} · grid max: ${fmt(st.rho_max_unconstrained, 6)}</dd>
       </dl>
+      <p>The unconstrained fit for this panel exceeds 1 (${fmt(st.rho_max_unconstrained, 4)} at grid maximum), meaning disturbances would compound without bound and impulse responses would not be well defined. The deployed system is therefore constrained below the unit root; both series are shown in the Dynamics view rather than only the constrained one, because the gap between them is itself a diagnostic about how close the estimated system sits to non-stationarity.${isModern ? ` With the constrained maximum at ${fmt(st.rho_max, 4)}, shocks in this panel are near-permanent over the horizon shown: the system barely mean-reverts.` : ""}</p>
+      <p>Impulse responses trace a ${dm.shock_size_sd} standard-deviation shock to ${esc(shockLabel)} (${esc(dm.shock_var)}) over ${dm.H_irf} years across all nodes.</p>
     </div>
+
     <div class="methods-card">
-      <h3>Model-implied trajectories</h3>
+      <h3>Stage 5 — Function-valued effects</h3>
+      <p>Because contributions are learned functions rather than coefficients, an edge's strength is not a single number. For every consensus edge the fitted model is evaluated across the observed range of the source, holding other inputs at their values, producing an individual conditional expectation curve spanning the 2nd to 98th percentile of the source distribution. Each curve is computed three times, on country-years in the bottom, middle, and top third of the democracy distribution, so that a relationship which operates in autocracies but saturates in established democracies is visible as a difference in curve shape rather than averaged away.</p>
+    </div>
+
+    <div class="methods-card">
+      <h3>Stage 6 — Trajectories and validation</h3>
       <dl class="methods-kv">
         <dt>seed ensemble</dt><dd class="mono">${fmeta.seeds.join(", ")}</dd>
-        <dt>horizon</dt><dd>${fmeta.horizon} years · validated to h = ${fmeta.validated_horizon}</dd>
+        <dt>horizon</dt><dd>${fmeta.horizon} years · validated through h = ${fmeta.validated_horizon}</dd>
         <dt>coverage</dt><dd>${fmeta.n_countries} countries · last observed year ${fmeta.year_max}</dd>
-        <dt>validation</dt><dd>${fmeta.n_validation_segments} held-out segments</dd>
+        <dt>validation design</dt><dd>${fmeta.n_validation_segments} held-out segments · recency window ${fmeta.recency_years} years</dd>
         <dt>weights</dt><dd>${esc(fmeta.weights)}</dd>
         <dt>uncertainty</dt><dd>${esc(fmeta.uncertainty)}</dd>
       </dl>
+      <p>Running the fitted system forward produces model-implied trajectories: where the estimated dynamics point if nothing outside the model intervenes. They are not predictions, and the portal never presents them as such. Accuracy is assessed on held-out segments against a persistence baseline — last observed value carried forward — which is a demanding benchmark for slow-moving institutional series.</p>
+      <p><strong>The model does not beat persistence for level forecasts at validated horizons.</strong> The ratios in the validation table exceed 1. This is reported prominently rather than buried because the contribution of this work is conditional structure — which links operate, how they bend, and how their influence shifts over time — not point forecasting. Horizons 6 through 10 have not been scored at all and are drawn faded and labelled unvalidated.</p>
+      <div class="prov">${esc(d.validation.note)}</div>
     </div>
+
+    <div class="methods-card">
+      <h3>Limitations</h3>
+      <p>These constraints are properties of the design, not defects to be read around:</p>
+      <ul>
+        <li><strong>Observational, not experimental.</strong> Edges represent predictive contribution within a fitted model on observational panel data. They are model-based evidence about structure, not experimental proof of mechanism, and unmeasured common causes remain possible.</li>
+        <li><strong>Within-country identification.</strong> Effects are identified from variation inside countries over time. Cross-country differences, which is where much of the variance in these measures lives, do not contribute.${nStructural ? ` For ${nStructural} nodes in this panel the within-country signal is too weak to serve as a target at all.` : ""}</li>
+        <li><strong>Forecast accuracy.</strong> Not competitive with persistence at validated horizons; unvalidated beyond five years.</li>
+        <li><strong>Ensemble size.</strong> Three seeds are enough to separate stable from unstable edges, not enough to characterize the full distribution of results across initializations.</li>
+        <li><strong>Factor labels are interpretive.</strong> Display names for latent factors were assigned by the lab. The authoritative definition of each factor is its member indicator list, shown in the Structure view.</li>
+        <li><strong>Panels are separate analyses.</strong> Century and Modern have different variables, different factor structures, and different estimated graphs. Quantities are not comparable across them, and factor numbering does not correspond.</li>
+        <li><strong>Measurement uncertainty is not propagated.</strong> V-Dem point estimates enter the pipeline; the coder-disagreement intervals V-Dem publishes alongside them are not carried through.</li>
+        <li><strong>Coverage differs by stage.</strong> The estimation panel covers ${m.panel_meta.n_countries} countries; trajectories are produced for ${fmeta.n_countries}, since a country needs sufficient recent history to be projected forward.</li>
+      </ul>
+    </div>
+
     <div class="methods-card">
       <h3>Node naming</h3>
-      <p>Observed indicators display their V-Dem codebook names (v15). Latent factors (F01, F05, …) display interpretive labels assigned by the AIM-3D Lab; the constituent V-Dem indicators for every factor are listed in its neighborhood view on the Structure page. Factor numbering is panel-specific: the same number does not denote the same construct across the Century and Modern views.</p>
+      <p>Observed indicators display their V-Dem codebook names (v15). Latent factors display interpretive labels assigned by the AIM-3D Lab; the constituent V-Dem indicators for every factor are listed in its neighborhood view on the Structure page. Factor numbering is panel-specific: the same number does not denote the same construct across the Century and Modern views. Plain-language explanations of every method and quantity are in the Reader's guide.</p>
     </div>
+
     <div class="methods-card">
       <h3>Data &amp; citation</h3>
-      <p>Primary data: Varieties of Democracy (V-Dem) dataset v15, DOI <a href="https://doi.org/10.23696/vdemds25">10.23696/vdemds25</a>.${S.panel === "modern_factors" ? " The Modern panel additionally incorporates Maddison Project, World Bank WDI, UN World Population Prospects, and KOF Globalisation covariates." : ""}</p>
-      <p>Analysis: AIM-3D Lab (AI-based Modeling of Democratic Development and Decline), Lucy Family Institute for Data &amp; Society, University of Notre Dame. This explorer serves precomputed pipeline artifacts; it computes no new statistics.</p>
+      <p>Primary data: Varieties of Democracy (V-Dem) dataset v15, DOI <a href="https://doi.org/10.23696/vdemds25">10.23696/vdemds25</a>.${isModern ? " The Modern panel additionally incorporates Maddison Project (historical national accounts), World Bank World Development Indicators, UN World Population Prospects, and KOF Globalisation Index covariates." : " The Century panel uses V-Dem indicators only, trading variable breadth for historical depth."}</p>
+      <p>Analysis: AIM-3D Lab (AI-based Modeling of Democratic Development and Decline), Lucy Family Institute for Data &amp; Society, University of Notre Dame. This explorer serves precomputed pipeline artifacts; it computes no new statistics. Bundle generated ${esc(m.generated)}.</p>
     </div>`;
 }
 

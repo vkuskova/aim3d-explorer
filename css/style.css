@@ -386,6 +386,13 @@ select:focus-visible, input:focus-visible, a:focus-visible {
   margin-bottom: 18px;
 }
 .methods-card h3 { font-family: var(--serif); font-size: 18px; margin: 0 0 10px; color: var(--ink); }
+.methods-card p { font-size: 13.5px; max-width: 760px; margin: 0 0 10px; }
+.methods-card p:last-child { margin-bottom: 0; }
+.methods-card ul { margin: 6px 0 0; padding-left: 20px; max-width: 760px; }
+.methods-card li { font-size: 13.5px; margin-bottom: 7px; }
+.methods-card .methods-kv { margin: 4px 0 12px; }
+.methods-card .prov { margin: 10px 0; }
+.methods-card em { color: var(--ink); font-style: italic; }
 .methods-kv { display: grid; grid-template-columns: 200px 1fr; gap: 6px 18px; font-size: 13.5px; }
 .methods-kv dt { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .methods-kv dd { margin: 0; }

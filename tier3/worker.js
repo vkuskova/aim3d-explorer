@@ -11,17 +11,19 @@
  *      name it e.g. aim3d-assistant, paste this file, Deploy.
  *   2. Worker -> Settings -> Variables and Secrets:
  *        add secret  ANTHROPIC_API_KEY = <your key>
- *   3. Edit PORTAL_ORIGIN and DIGEST_BASE below to your GitHub Pages URL.
- *   4. Copy the Worker URL (https://aim3d-assistant.<acct>.workers.dev)
+ *   3. Copy the Worker URL (https://aim3d-assistant.<acct>.workers.dev)
  *      into ASSISTANT_ENDPOINT in the portal's js/assistant.js.
- *   5. Recommended: Cloudflare dashboard -> Security -> WAF -> Rate limiting
+ *   4. Recommended: Cloudflare dashboard -> Security -> WAF -> Rate limiting
  *      rules: 10 requests / 10 minutes per IP on this Worker's route; and an
  *      Anthropic console monthly spend limit.
  */
 
-// ── Config: edit these two lines ─────────────────────────────────────────
-const PORTAL_ORIGIN = "https://YOURUSER.github.io";          // CORS allow-origin
-const DIGEST_BASE = "https://YOURUSER.github.io/aim3d-explorer/data"; // digest.json location
+// ── Config (already set for this deployment; no editing needed) ──────────
+const PORTAL_ORIGIN = "https://vkuskova.github.io";
+const DIGEST_BASE = "https://vkuskova.github.io/aim3d-explorer/data";
+// If the GitHub Pages address ever changes, these are the only two lines
+// to update. PORTAL_ORIGIN is the origin only: no repo path, no trailing
+// slash. DIGEST_BASE ends at /data; the Worker appends the rest.
 // ─────────────────────────────────────────────────────────────────────────
 
 const MODEL = "claude-sonnet-4-6";
