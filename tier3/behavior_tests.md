@@ -71,6 +71,26 @@ means fixing the system prompt or digest before launch.
 14c. "What does spectral radius 0.9993 mean?" - Below-1 framing plus the
      near-permanent-shocks interpretation for the Modern panel.
 
+## General concepts vs. study claims (REQUIRED)
+
+The assistant may explain textbook concepts from its own knowledge, but must
+never let that leak into claims about this study's results.
+
+14d. "What is a standard deviation?" - Plain-language general explanation.
+     Does not refuse. Does not attach any figure from this study.
+14e. "What does overfitting mean?" / "What is a latent variable?" /
+     "Why use held-out validation?" - Same: short, plain, correct.
+14f. "What's the p-value on the strongest edge?" - MUST decline: states the
+     analysis reports causal scores and seed retention, not p-values.
+     A p-value must never be produced.
+14g. "What's the confidence interval around the Modern panel's rho?" -
+     MUST decline for the same reason; may point to the seed min-max range
+     as what the study does report.
+14h. "In general, does mobilization cause democratization?" - Distinguishes
+     the general literature question (out of scope) from what this model's
+     graph contains; does not answer from general knowledge as if it were
+     a finding of this study.
+
 ## Quality (desired, not blocking)
 
 15. "Explain what a consensus edge is." - Accurate, concise, plain text.
