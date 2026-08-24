@@ -94,13 +94,22 @@ const ASSISTANT_ENDPOINT = "https://aim3d-assistant.vkuskova.workers.dev";
           history: history[p].slice(0, -1).slice(-6),
         }),
       });
-      const data = await r.json();
+      let data = {};
+      try { data = await r.json(); } catch (_) { /* non-JSON body */ }
       if (!r.ok || data.error) throw new Error(data.error || `HTTP ${r.status}`);
       history[p].push({ role: "assistant", content: data.reply });
     } catch (e) {
+      // Distinguish a blocked/failed request from a server-side error so
+      // setup problems are diagnosable without opening the browser console.
+      const netFail = (e instanceof TypeError) ||
+        /Failed to fetch|NetworkError|Load failed/i.test(String(e && e.message));
+      const detail = netFail
+        ? "could not reach the assistant service (network or CORS)"
+        : String(e && e.message || e);
+      console.error("[AIM-3D assistant]", e);
       history[p].push({
         role: "assistant",
-        content: "The assistant is temporarily unavailable. All results remain browsable in the portal views.",
+        content: `The assistant is temporarily unavailable — ${detail}. All results remain browsable in the portal views.`,
       });
     } finally {
       busy = false;
@@ -117,11 +126,13 @@ const ASSISTANT_ENDPOINT = "https://aim3d-assistant.vkuskova.workers.dev";
       document.getElementById("asst-input").focus();
     }
   });
-  drawer.addEventListener("click", (e) => {
-    if (e.target.id === "asst-close") {
-      drawer.hidden = true;
-      launcher.setAttribute("aria-expanded", "false");
-    }
+  function closeDrawer() {
+    drawer.hidden = true;
+    launcher.setAttribute("aria-expanded", "false");
+  }
+  document.getElementById("asst-close").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !drawer.hidden) closeDrawer();
   });
   document.getElementById("asst-form").addEventListener("submit", (e) => {
     e.preventDefault();
