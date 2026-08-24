@@ -6,7 +6,7 @@
 
 /* Set to your deployed Worker URL to enable the assistant, e.g.
    "https://aim3d-assistant.YOURACCT.workers.dev" */
-const ASSISTANT_ENDPOINT = "";
+const ASSISTANT_ENDPOINT = "https://aim3d-assistant.vkuskova.workers.dev";
 
 (function () {
   if (!ASSISTANT_ENDPOINT) return;
