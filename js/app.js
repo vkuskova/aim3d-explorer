@@ -7,7 +7,7 @@
 
 /* ───────────────────────── State ───────────────────────── */
 
-const BUILD = "v14";
+const BUILD = "v16";
 const BUILD_DATE = "2026-08-24";
 
 const PANELS = {
@@ -685,6 +685,9 @@ async function renderTrajectories() {
     cSel.dataset.panel = S.panel;
     S.trajCountry = countries.includes(S.trajCountry) ? S.trajCountry : countries[0];
   }
+  // The history bundle may contain countries the forecast set does not;
+  // never let an out-of-set selection reach the chart.
+  if (!fc.countries[S.trajCountry]) S.trajCountry = countries[0];
   cSel.value = S.trajCountry;
 
   const sample = fc.countries[S.trajCountry];

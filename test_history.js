@@ -15,10 +15,16 @@ const check = (name, cond, extra) => {
   if (!cond) failures++;
 };
 
+const backup = fixture + ".testbak";
+
 function writeFixture() {
+  // A real bundle may be present; move it aside and restore it afterwards.
   if (fs.existsSync(fixture)) {
-    console.error("REFUSING: a real history.json is present; not overwriting.");
-    process.exit(2);
+    if (fs.existsSync(backup)) {
+      console.error("REFUSING: stale " + backup + " exists; restore it manually.");
+      process.exit(2);
+    }
+    fs.renameSync(fixture, backup);
   }
   const fc = JSON.parse(fs.readFileSync(path.join(root, `data/${PANEL}/forecasts.json`)));
   const names = Object.keys(fc.countries).slice(0, 2);
@@ -34,6 +40,7 @@ function writeFixture() {
     }
     return { years, series: s };
   };
+  wroteFixture = true;
   fs.writeFileSync(fixture, JSON.stringify({
     panel: PANEL, _fixture: true,
     units: Object.fromEntries(nodes.map((n) =>
@@ -42,6 +49,19 @@ function writeFixture() {
   }));
   return { gapCountry, plainCountry };
 }
+
+// Idempotent: safe to call more than once (finally + process exit).
+// Only ever deletes the fixture this run created, and only restores a
+// backup that exists.
+let wroteFixture = false;
+function restore() {
+  if (wroteFixture && fs.existsSync(fixture)) {
+    fs.unlinkSync(fixture);
+    wroteFixture = false;
+  }
+  if (fs.existsSync(backup)) fs.renameSync(backup, fixture);
+}
+process.on("exit", restore);
 
 (async () => {
   const { gapCountry, plainCountry } = writeFixture();
@@ -106,11 +126,11 @@ function writeFixture() {
 
     console.log(`\n${failures === 0 ? "ALL HISTORY CHECKS PASSED" : failures + " FAILED"}`);
   } finally {
-    fs.unlinkSync(fixture);
+    restore();
   }
   process.exit(failures ? 1 : 0);
 })().catch((e) => {
-  if (fs.existsSync(fixture)) fs.unlinkSync(fixture);
+  restore();
   console.error("TEST CRASHED:", e);
   process.exit(2);
 });
