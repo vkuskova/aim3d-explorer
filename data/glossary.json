@@ -2,33 +2,152 @@
   "_note": "Single source of truth for method explanations. Consumed by: (1) hover tooltips in the explorer ('short'), (2) the Guide view ('long'), (3) the Tier-3 assistant via the Worker. 'aliases' are the strings the UI auto-links. Edit here; no code changes needed.",
   "groups": [
     {
+      "title": "Reading this portal",
+      "terms": [
+        {
+          "id": "adjacency_matrix",
+          "term": "Adjacency matrix",
+          "aliases": [
+            "adjacency matrix"
+          ],
+          "short": "The grid on the Structure page. Each row is a source variable, each column a target; a coloured square means the model found a link from that row to that column, with darker blue meaning a stronger link.",
+          "long": "An adjacency matrix is a compact way to display a network. Every variable appears twice: once as a row (acting as a source) and once as a column (acting as a target). A coloured cell at row i, column j means the model retained a link from variable i to variable j, and the depth of the blue encodes the causal score. Blank cells mean no retained link. The diagonal is hatched because a variable's link to itself is not displayed. Greyed-out columns are structural source-only variables, which the model never treats as targets. Hovering any cell shows the two variable names, the score with its seed range, and any flags; clicking a row or column label opens that variable's neighborhood view. This format is used instead of a drawn network because with 29 to 47 variables and hundreds of links, a node-and-arrow diagram becomes unreadable."
+        },
+        {
+          "id": "node_edge",
+          "term": "Nodes and edges",
+          "aliases": [
+            "nodes and edges",
+            "edges",
+            "edge",
+            "nodes",
+            "node"
+          ],
+          "short": "Nodes are the variables in the model; edges are the directed links between them, each running from a source variable to a target variable.",
+          "long": "The model is a network. Nodes are its variables - some observed V-Dem indicators, some latent factors summarizing groups of indicators, some composites. Edges are directed links: an edge from A to B means the past of A contributes to predicting B within the fitted model. Direction matters, and an edge from A to B does not imply one from B to A. Each edge carries a causal score, a seed retention count, and sometimes flags. The Edges view lists every retained edge in sortable form; the Structure view shows the same information as a matrix."
+        },
+        {
+          "id": "source_target",
+          "term": "Source and target",
+          "aliases": [
+            "source and target",
+            "source variable",
+            "target variable"
+          ],
+          "short": "For any edge, the source is the variable doing the influencing and the target is the variable being influenced. Rows are sources, columns are targets.",
+          "long": "Every edge has a direction, described by its two endpoints. The source is the variable whose past values contribute to the prediction; the target is the variable being predicted. In the adjacency matrix, rows are sources and columns are targets, so reading across a row shows everything that variable influences, and reading down a column shows everything that influences it. Some variables act only as sources - see structural (source-only) nodes."
+        },
+        {
+          "id": "neighborhood",
+          "term": "Neighborhood view",
+          "aliases": [
+            "neighborhood view",
+            "neighborhood"
+          ],
+          "short": "The panel that opens when you click a variable name: its definition, its member indicators if it is a factor, and every edge into and out of it.",
+          "long": "Clicking any variable label in the adjacency matrix opens its neighborhood view. This shows the variable's display name and id, its kind (observed indicator, reflective factor, formative composite), its ICC, the list of constituent V-Dem indicators if it is a factor or composite, and two columns listing every incoming and outgoing edge with scores and flags. For latent factors this member list is the authoritative definition of what the factor represents - the display name is only an interpretive label."
+        },
+        {
+          "id": "panels",
+          "term": "The two panels (Century and Modern views)",
+          "aliases": [
+            "Century view",
+            "Modern view",
+            "two panels",
+            "panel"
+          ],
+          "short": "Two separate analyses: the Century view (1900-2023, V-Dem only) and the Modern view (1970-2021, V-Dem plus economic, demographic, and globalization data). They are never merged.",
+          "long": "The portal presents two independent analyses, selectable at the top of the page. The Century view covers 1900-2023 using V-Dem indicators alone, trading variable breadth for historical depth. The Modern view covers 1970-2021 and adds Maddison Project, World Bank, UN World Population Prospects, and KOF globalization data, trading historical reach for richer covariates. Each panel has its own variables, its own factor structure, and its own estimated graph. They are never merged into one graph, and quantities are not directly comparable across them. Factor numbering in particular is panel-specific."
+        },
+        {
+          "id": "seeds",
+          "term": "Seeds and the ensemble",
+          "aliases": [
+            "seed ensemble",
+            "three seeds",
+            "seeds",
+            "ensemble"
+          ],
+          "short": "The whole analysis is run three times from different random starting points. Reported values are the median across those three runs, and the spread shows how sensitive a result is to retraining.",
+          "long": "Neural models begin from random initial values, so a single training run can produce results that partly reflect that randomness. The entire estimation is therefore repeated three times with different random seeds, forming an ensemble. Edge scores are reported as the median across the three runs with the min-max range alongside; edges are kept only if they survive in at least two runs, and flagged as consensus if they survive in all three. In the Trajectories view, the shaded band around each line is likewise the min-max across the three seeds. A wide spread signals a result that depends on the training run; a narrow one signals stability."
+        },
+        {
+          "id": "regimes",
+          "term": "Democracy regimes (terciles)",
+          "aliases": [
+            "democracy terciles",
+            "terciles",
+            "tercile",
+            "regimes",
+            "regime"
+          ],
+          "short": "Country-years split into three equal groups by their level of electoral democracy - low, middle, and high - so effects can be compared between more and less democratic contexts.",
+          "long": "To test whether a relationship works differently in autocracies than in established democracies, the country-year observations are divided into three equal-sized groups by their electoral democracy score: the bottom, middle, and top thirds. Effect curves are then drawn separately for each group. If the three curves have different shapes, the effect is context-dependent; if they overlap, it operates similarly across regimes. These are groupings of observations, not a claim that countries fall into three distinct regime types."
+        },
+        {
+          "id": "horizon",
+          "term": "Horizon",
+          "aliases": [
+            "horizon",
+            "horizons"
+          ],
+          "short": "How many years ahead a trajectory or impulse response extends. Horizon 1 is one year out; only horizons 1 through 5 have been validated.",
+          "long": "Horizon counts years forward from the last observation. In the Trajectories view, horizons 1-5 are validated against held-out data and drawn solid; horizons 6-10 have not been scored and are drawn faded and labelled unvalidated. In the Dynamics view, impulse response columns are horizons after the shock. The validation table reports errors separately at each horizon, and errors grow with horizon."
+        },
+        {
+          "id": "vdem",
+          "term": "V-Dem",
+          "aliases": [
+            "V-Dem"
+          ],
+          "short": "Varieties of Democracy, the expert-coded dataset behind this portal: hundreds of indicators of democratic institutions and practices, covering most countries from 1789 onward. This portal uses version 15.",
+          "long": "V-Dem (Varieties of Democracy) is a research project based at the University of Gothenburg producing the largest available dataset on democracy. Rather than reducing democracy to a single score, it measures hundreds of specific attributes - electoral conduct, civil liberties, judicial constraints, civil society, and more - most coded by multiple country experts and combined through a measurement model that accounts for coder disagreement. This portal uses V-Dem version 15 (DOI 10.23696/vdemds25). Variable codes beginning v2 are V-Dem indicators; codes beginning KOF, wb, wpp, or m are from the additional sources used in the Modern panel."
+        }
+      ]
+    },
+    {
       "title": "Model and estimation",
       "terms": [
         {
           "id": "navar",
           "term": "NAVAR (Neural Additive Vector Autoregression)",
-          "aliases": ["NAVAR"],
+          "aliases": [
+            "NAVAR"
+          ],
           "short": "A model that learns, for each pair of variables, a flexible curve describing how past values of one variable shift future values of another. 'Additive' means these contributions sum up, so each link's contribution can be inspected separately.",
           "long": "NAVAR is the model family behind the causal graph. Like a classical vector autoregression, it predicts each variable from the recent past of all variables. Unlike the classical version, each influence is a learned nonlinear curve rather than a single coefficient, so effects can strengthen, weaken, or saturate across the observed range. The additive structure is what keeps the model interpretable: the prediction for a target is the sum of separate contributions, one per source variable, so the strength of each link can be measured and displayed on its own. Discovered links reflect predictive contribution within this model on observational data; they are model-based evidence, not experimental proof."
         },
         {
           "id": "causal_score",
           "term": "Causal score",
-          "aliases": ["causal score", "NAVAR causal score"],
+          "aliases": [
+            "causal score",
+            "NAVAR causal score"
+          ],
           "short": "How much a source variable's history contributes to predicting a target within the fitted model. Higher means a stronger, more consistently used link.",
           "long": "Each edge carries a score summarizing how much the model relies on the source's past when predicting the target. Scores are compared within a panel, not across panels. Because the model is retrained three times from different random starting points, every score is reported as the median across those three runs, with the min-max range showing how sensitive it is to the retraining. A score quantifies predictive contribution inside the model; it does not by itself establish a mechanism."
         },
         {
           "id": "consensus",
           "term": "Consensus and majority edges",
-          "aliases": ["consensus", "consensus edge", "consensus edges", "consensus graph", "majority edges", "majority edge"],
+          "aliases": [
+            "consensus",
+            "consensus edge",
+            "consensus edges",
+            "consensus graph",
+            "majority edges",
+            "majority edge"
+          ],
           "short": "The model is trained three times from different random starts. Edges retained in all three runs are 'consensus' (the canonical graph); edges retained in two of three are 'majority'.",
           "long": "Neural models depend partly on their random initialization, so a link found by one training run could be an artifact. To guard against this, the entire estimation is repeated three times with different random seeds, and edges are kept only if they survive a selection rule in at least two runs. Edges surviving all three runs form the consensus graph - the portal's default and the object treated as canonical in the papers. Edges surviving two of three ('majority', shown faded when toggled on) are plausible but less stable. The seed retention column ('3/3', '2/3') records this for every edge."
         },
         {
           "id": "standardized",
           "term": "Standardized units",
-          "aliases": ["standardized units", "standardized"],
+          "aliases": [
+            "standardized units",
+            "standardized"
+          ],
           "short": "Variables are rescaled to mean 0 and standard deviation 1 before estimation, so effects are expressed in standard deviations rather than each variable's raw scale.",
           "long": "Because the panel mixes very different scales (indices, percentages, dollar amounts), every variable is standardized before estimation: rescaled so its mean is 0 and its standard deviation is 1. All effect curves, impulse responses, and influence trajectories are therefore in standard-deviation units - 'a 1-unit change' means 'a one-standard-deviation change'. The single exception is the Trajectories view, where the electoral democracy index is shown on its native 0-1 scale."
         }
@@ -40,28 +159,43 @@
         {
           "id": "factor",
           "term": "Reflective factor",
-          "aliases": ["reflective factor", "latent factor", "factors (F01"],
+          "aliases": [
+            "reflective factor",
+            "latent factor",
+            "factors (F01"
+          ],
           "short": "Many closely related indicators summarized by one underlying dimension (e.g. dozens of civil-liberty indicators behind one 'Liberal-institutional core'). Factor names are interpretive labels by the AIM-3D Lab.",
           "long": "V-Dem measures some concepts with many strongly correlated indicators. Feeding them into the model separately creates redundancy that destabilizes estimation, so groups of related indicators are summarized by latent factors estimated with exploratory factor analysis: each factor is one underlying dimension that its member indicators reflect. The number of factors is chosen by parallel analysis, and factor scores enter the model in place of their members. Display names like 'Mass mobilization' are interpretive labels assigned by the lab - the authoritative definition of each factor is its member list, shown in the node's neighborhood view. Factor numbering is panel-specific: F05 in the Century view and F05 in the Modern view are different constructs."
         },
         {
           "id": "composite",
           "term": "Formative composite",
-          "aliases": ["formative composite", "composite"],
+          "aliases": [
+            "formative composite",
+            "composite"
+          ],
           "short": "A single node built from the categories of one multiple-choice V-Dem item (e.g. the state-of-emergency categories), combined so the shares can enter the model as one variable.",
           "long": "A few V-Dem items are recorded as shares across a set of categories (for example, the state-of-emergency item). These category shares are combined into a single node using a log-ratio transformation appropriate for compositional data. Unlike a reflective factor, the categories do not reflect one underlying dimension - they jointly constitute the measure - hence the separate label."
         },
         {
           "id": "icc",
           "term": "ICC and structural (source-only) nodes",
-          "aliases": ["ICC", "structural (source-only)", "source-only", "ICC masking"],
+          "aliases": [
+            "ICC",
+            "structural (source-only)",
+            "source-only",
+            "ICC masking"
+          ],
           "short": "For some variables nearly all variation is between countries rather than within a country over time. The model cannot identify effects onto such variables, so they act as sources only - never as targets.",
           "long": "The model identifies effects from within-country changes over time. For some variables - typically slow-moving structural conditions - almost all variation is between countries, with very little movement within any country's own history. The intraclass correlation (ICC) measures this: a high ICC means between-country differences dominate. For such variables there is too little within-country signal to estimate what affects them, so they are held as sources only. Their column in the adjacency matrix is greyed out. Importantly, this is not a finding that nothing affects them - the model simply does not estimate effects onto them at all."
         },
         {
           "id": "aggregation_adjacent",
           "term": "Aggregation-adjacent edges",
-          "aliases": ["aggregation-adjacent", "aggregation adjacent"],
+          "aliases": [
+            "aggregation-adjacent",
+            "aggregation adjacent"
+          ],
           "short": "Edges whose source contains an ingredient of the electoral democracy index itself. The link is correct model structure but partly reflects how the index is computed, so it must not be read as a discovered causal driver.",
           "long": "The electoral democracy index (polyarchy) is computed by V-Dem from component indices. Some nodes in the model contain one of those components. When such a node has an edge into polyarchy, part of that link reflects the arithmetic of the index rather than a substantive causal channel. These edges are flagged with an amber badge throughout the portal. They belong in the model - removing them would misstate the system - but reading them as discovered drivers of democracy would be a mistake."
         }
@@ -73,35 +207,53 @@
         {
           "id": "ice",
           "term": "ICE curves (effect curves)",
-          "aliases": ["ICE", "ICE curve", "ICE curves", "effect curves", "Effect curves"],
+          "aliases": [
+            "ICE",
+            "ICE curve",
+            "ICE curves",
+            "effect curves"
+          ],
           "short": "The estimated effect of moving a source variable across its observed range while holding everything else fixed, drawn separately for country-years at low, middle, and high levels of democracy.",
           "long": "An individual conditional expectation (ICE) curve answers: according to the fitted model, if the source variable moved across its observed range with everything else held fixed, how would the target respond? Because the model is nonlinear, the answer is a curve, not a number - an effect can be strong at low values and flatten at high ones. The portal draws each curve three times, for country-years in the bottom, middle, and top thirds of the democracy distribution, revealing whether an effect operates differently in autocracies than in established democracies. Axes are in standardized units; the horizontal range spans the 2nd to 98th percentile of the source's observed values."
         },
         {
           "id": "dcnar",
           "term": "DCNAR (dynamic inference)",
-          "aliases": ["DCNAR"],
+          "aliases": [
+            "DCNAR"
+          ],
           "short": "A second-stage model fitted on the consensus graph that lets the strength of the system's dynamics vary smoothly over time, revealing how influence patterns and stability evolved.",
           "long": "The causal graph says which links exist; DCNAR (a time-varying network autoregression fitted on the consensus graph) asks how the system's dynamics evolved. It allows the strength of the dynamics to change smoothly over normalized time, producing three things shown in the Dynamics view: influence trajectories for each node (lambda paths), a stability measure over time (the spectral radius), and impulse responses. Time is indexed by tau, running from 0 at the start of the panel to 1 at its end."
         },
         {
           "id": "lambda",
           "term": "Lambda paths (nodal influence)",
-          "aliases": ["lambda paths", "lambda", "nodal influence"],
+          "aliases": [
+            "lambda paths",
+            "lambda",
+            "nodal influence"
+          ],
           "short": "Each node's time-varying weight in the system's dynamics: rising lambda means the node's movements mattered more for the whole system in that era.",
           "long": "For each node, DCNAR estimates a time-varying influence weight - its lambda path. A node with high lambda in a given era is one whose movements propagated strongly through the system at that time. Comparing paths shows how the relative importance of, say, mobilization versus party institutionalization shifted across the panel's history. Values are in standardized units and are comparable within a panel."
         },
         {
           "id": "rho",
           "term": "Spectral radius (stability)",
-          "aliases": ["spectral radius", "rho"],
+          "aliases": [
+            "spectral radius",
+            "rho"
+          ],
           "short": "A one-number summary of whether disturbances fade out (below 1) or persist and compound (at or above 1). The deployed system is constrained to stay below 1; the unconstrained value is shown as a diagnostic.",
           "long": "The spectral radius summarizes the system's stability at each point in time: below 1, disturbances gradually fade; at or above 1, they persist or compound. The deployed system is constrained to remain just below 1 so that impulse responses are well-defined, and the portal shows both this constrained series and the unconstrained diagnostic. Where the constrained value runs extremely close to 1 - as in the Modern panel, whose maximum is 0.9993 - shocks are effectively near-permanent over the horizon shown: the system barely mean-reverts."
         },
         {
           "id": "irf",
           "term": "Impulse responses (IRF)",
-          "aliases": ["Impulse responses", "impulse response", "IRF"],
+          "aliases": [
+            "Impulse responses",
+            "impulse response",
+            "IRF"
+          ],
           "short": "What happens to every variable, year by year, after one variable is hit with a one-standard-deviation shock - the system's ripple pattern.",
           "long": "An impulse response function traces the model's answer to: if one node were displaced by one standard deviation today, how would every variable respond over the following years? The heatmap in the Dynamics view shows the response of each node (rows) at each horizon (columns) to a shock in the panel's designated shock node. Blue and red denote positive and negative responses, in standardized units. Whether responses fade or accumulate is governed by the spectral radius."
         }
@@ -113,28 +265,43 @@
         {
           "id": "trajectory",
           "term": "Model-implied trajectories",
-          "aliases": ["model-implied trajectories", "model-implied trajectory", "model-implied"],
+          "aliases": [
+            "model-implied trajectories",
+            "model-implied trajectory",
+            "model-implied"
+          ],
           "short": "Where the fitted system, run forward from a country's recent history, would go on its own. A description of the model's dynamics - not a prediction of what will happen.",
           "long": "The Trajectories view runs the fitted system forward from each country's recent history. The result shows where the estimated dynamics point if nothing outside the model intervenes - which is why these are called model-implied trajectories, never predictions. The shaded band is the min-max across the three training seeds. The first five years are validated against held-out data; horizons 6-10 are drawn faded and labeled unvalidated. A grey dashed persistence line - the last observed value carried forward - is drawn as the reference every trajectory should be judged against."
         },
         {
           "id": "persistence",
           "term": "Persistence baseline",
-          "aliases": ["persistence baseline", "persistence reference", "persistence"],
+          "aliases": [
+            "persistence baseline",
+            "persistence reference",
+            "persistence"
+          ],
           "short": "The simplest possible forecast: tomorrow equals today. The model's trajectories are compared against it - and at validated horizons the model does not beat it for level forecasts.",
           "long": "The persistence baseline assumes each variable stays at its last observed value. It is a famously hard benchmark for slow-moving series like democracy indices. The validation table reports the model's error relative to persistence at each horizon; ratios above 1 mean persistence is more accurate for level forecasts, and that is what the table shows at validated horizons. This is reported plainly because the model's contribution is its conditional structure - which links operate, how, and when - not point forecasting."
         },
         {
           "id": "validation",
           "term": "Validation table",
-          "aliases": ["validation table", "validated horizon", "MAE"],
+          "aliases": [
+            "validation table",
+            "validated horizon",
+            "MAE"
+          ],
           "short": "Held-out forecast errors by horizon: the model's mean absolute error next to the persistence baseline's, and their ratio. Horizons beyond 5 years are unvalidated.",
           "long": "Validation uses held-out segments: the model is run on data ending earlier than the observations it is scored against. The table reports mean absolute error (MAE) by forecast horizon for the model and for the persistence baseline, plus their ratio, both across all nodes in standardized units and for the electoral democracy index in its native 0-1 units. Ratios above 1 - shown in red - mean the model is less accurate than persistence at that horizon. Only horizons 1-5 are validated; nothing beyond that has been scored."
         },
         {
           "id": "polyarchy",
           "term": "Electoral democracy index (polyarchy)",
-          "aliases": ["polyarchy", "electoral democracy index"],
+          "aliases": [
+            "polyarchy",
+            "electoral democracy index"
+          ],
           "short": "V-Dem's headline 0-1 measure of electoral democracy: free and fair elections, elected officials, expression and association freedoms, and broad suffrage.",
           "long": "The electoral democracy index (v2x_polyarchy) is V-Dem's headline measure of Dahl's concept of polyarchy, scaled 0-1. It aggregates components covering free and fair elections, elected officials, freedom of expression and alternative information, freedom of association, and suffrage. In this portal it is the protected outcome node: it always enters the model as observed, never absorbed into a factor. Because it is computed from components, edges from nodes containing those components are flagged aggregation-adjacent."
         }
