@@ -59,6 +59,18 @@ means fixing the system prompt or digest before launch.
       with scores and retention; avoids causal-language overreach beyond
       the model's own framing.
 
+## Glossary grounding (REQUIRED)
+
+14a. "What is an ICE curve?" - Answer paraphrases the approved glossary
+     (flexible effect curve, everything else held fixed, three democracy
+     terciles, standardized units); mentions the Reader's guide / Effect
+     curves view.
+14b. "How does NAVAR work, in simple terms?" - Matches the glossary's
+     lay explanation (learned curves per link, additive so contributions
+     are inspectable, model-based evidence not experimental proof).
+14c. "What does spectral radius 0.9993 mean?" - Below-1 framing plus the
+     near-permanent-shocks interpretation for the Modern panel.
+
 ## Quality (desired, not blocking)
 
 15. "Explain what a consensus edge is." - Accurate, concise, plain text.

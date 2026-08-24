@@ -518,3 +518,31 @@ select:focus-visible, input:focus-visible, a:focus-visible {
   #asst-drawer { right: 10px; bottom: 66px; width: calc(100vw - 20px); }
   #asst-launcher { right: 10px; bottom: 14px; }
 }
+
+/* ── Glossary terms & Reader's guide ─────────────────── */
+.term {
+  border-bottom: 1px dotted var(--blue);
+  cursor: help;
+}
+.guide-group h3 {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 30px 0 6px;
+}
+.guide-entry {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+}
+.guide-entry h4 {
+  font-family: var(--sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.guide-entry p { margin: 0; font-size: 13.5px; max-width: 760px; }

@@ -12,6 +12,9 @@ const PANELS = {
   modern_factors:  { name: "Modern view",  span: "1970–2021" },
 };
 
+let GLOSSARY = null;   // shared across panels; loaded once
+let TERM_INDEX = null;  // alias -> term id, longest aliases first
+
 const S = {
   panel: "century_factors",
   data: {},          // per-panel: {manifest, nodes, edges, ice, dcnar, validation}
@@ -34,7 +37,76 @@ async function fetchJSON(path) {
   return r.json();
 }
 
+async function loadGlossary() {
+  if (GLOSSARY) return GLOSSARY;
+  try {
+    GLOSSARY = await fetchJSON("data/glossary.json");
+  } catch (e) {
+    GLOSSARY = { groups: [] }; // glossary is optional; portal works without it
+  }
+  const idx = [];
+  GLOSSARY.groups.forEach((g) => g.terms.forEach((t) =>
+    (t.aliases || []).forEach((a) => idx.push([a, t.id]))));
+  idx.sort((a, b) => b[0].length - a[0].length); // longest first
+  TERM_INDEX = idx;
+  return GLOSSARY;
+}
+function glossaryTerm(id) {
+  if (!GLOSSARY) return null;
+  for (const g of GLOSSARY.groups)
+    for (const t of g.terms)
+      if (t.id === id) return t;
+  return null;
+}
+
+/* Wrap the first occurrence of each glossary alias inside the given
+   container's text nodes with a hoverable term span. Idempotent. */
+function annotateTerms(container) {
+  if (!TERM_INDEX || !container || container.dataset.termified) return;
+  container.dataset.termified = "1";
+  const seen = new Set();
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) =>
+      n.parentElement.closest(".term, script, style, a, button")
+        ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    let text = node.nodeValue;
+    for (const [alias, id] of TERM_INDEX) {
+      if (seen.has(id)) continue;
+      const isAcronym = alias === alias.toUpperCase();
+      const pos = isAcronym ? text.indexOf(alias)
+        : text.toLowerCase().indexOf(alias.toLowerCase());
+      if (pos === -1) continue;
+      const before = text.slice(0, pos);
+      const match = text.slice(pos, pos + alias.length);
+      const after = text.slice(pos + alias.length);
+      const span = document.createElement("span");
+      span.className = "term";
+      span.dataset.term = id;
+      span.textContent = match;
+      const afterNode = document.createTextNode(after);
+      node.nodeValue = before;
+      node.parentNode.insertBefore(span, node.nextSibling);
+      node.parentNode.insertBefore(afterNode, span.nextSibling);
+      seen.add(id);
+      break; // continue scanning in afterNode on later iterations
+    }
+  }
+}
+function annotateView(viewId) {
+  const view = document.getElementById(viewId);
+  if (!view) return;
+  view.querySelectorAll(".view-lede, .footnote, .block-title").forEach((el) => {
+    delete el.dataset.termified; // footnotes are rewritten per render
+    annotateTerms(el);
+  });
+}
+
 async function loadPanel(panel) {
+  await loadGlossary();
   if (S.data[panel]) return S.data[panel];
   $("loading").hidden = false;
   const base = `data/${panel}`;
@@ -776,9 +848,25 @@ function renderMethods() {
     </div>`;
 }
 
+/* ──────────────────────── View: Guide ───────────────────── */
+
+function renderGuide() {
+  const body = $("guide-body");
+  if (!GLOSSARY || !GLOSSARY.groups.length) {
+    body.innerHTML = '<p class="footnote">Guide unavailable.</p>';
+    return;
+  }
+  body.innerHTML = GLOSSARY.groups.map((g) =>
+    `<div class="guide-group"><h3>${esc(g.title)}</h3>` +
+    g.terms.map((t) =>
+      `<div class="guide-entry" id="guide-${esc(t.id)}"><h4>${esc(t.term)}</h4><p>${esc(t.long)}</p></div>`
+    ).join("") + `</div>`
+  ).join("");
+}
+
 /* ─────────────────────── Router / init ──────────────────── */
 
-const VIEWS = ["structure", "edges", "ice", "dynamics", "trajectories", "methods"];
+const VIEWS = ["structure", "edges", "ice", "dynamics", "trajectories", "guide", "methods"];
 
 async function showView(view) {
   if (!VIEWS.includes(view)) view = "structure";
@@ -793,7 +881,9 @@ async function showView(view) {
   else if (view === "ice") { populateIceSelect(); renderICE(); }
   else if (view === "dynamics") renderDynamics();
   else if (view === "trajectories") await renderTrajectories();
+  else if (view === "guide") renderGuide();
   else if (view === "methods") renderMethods();
+  annotateView(`view-${view}`);
 }
 
 async function switchPanel(panel) {
@@ -829,7 +919,30 @@ function init() {
 
   document.querySelectorAll(".panel-tag").forEach((b) =>
     b.classList.toggle("active", b.dataset.panel === S.panel));
+  attachTermTooltips();
   showView(location.hash.slice(1) || "structure");
+}
+
+/* Instant tooltip for glossary terms across the whole document. */
+function attachTermTooltips() {
+  const tip = ensureTooltipEl();
+  document.body.addEventListener("mouseover", (ev) => {
+    const t = ev.target.closest("[data-term]");
+    if (!t) return;
+    const g = glossaryTerm(t.dataset.term);
+    if (!g) return;
+    tip.innerHTML = `<strong>${esc(g.term)}</strong><br>${esc(g.short)}`;
+    tip.hidden = false;
+    const pad = 14;
+    let x = ev.clientX + pad, y = ev.clientY + pad;
+    if (x + tip.offsetWidth > window.innerWidth - 8) x = ev.clientX - tip.offsetWidth - pad;
+    if (y + tip.offsetHeight > window.innerHeight - 8) y = ev.clientY - tip.offsetHeight - pad;
+    tip.style.left = x + "px";
+    tip.style.top = y + "px";
+  });
+  document.body.addEventListener("mouseout", (ev) => {
+    if (ev.target.closest && ev.target.closest("[data-term]")) tip.hidden = true;
+  });
 }
 
 window.S = S; // read by js/assistant.js for panel awareness
