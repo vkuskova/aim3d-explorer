@@ -7,7 +7,7 @@
 
 /* ───────────────────────── State ───────────────────────── */
 
-const BUILD = "v12";
+const BUILD = "v14";
 const BUILD_DATE = "2026-08-24";
 
 const PANELS = {
@@ -22,6 +22,7 @@ const S = {
   panel: "century_factors",
   data: {},          // per-panel: {manifest, nodes, edges, ice, dcnar, validation}
   forecasts: {},     // per-panel, lazy
+  history: {},       // per-panel, lazy; null when the bundle has no history.json
   view: "structure",
   egoNode: null,
   edgeSort: { key: "score_median", dir: -1 },
@@ -137,6 +138,19 @@ async function loadPanel(panel) {
   S.data[panel] = { manifest, nodes, edges: edgeList, edgeMeta: Array.isArray(edges) ? {} : edges, ice, dcnar, validation };
   $("loading").hidden = true;
   return S.data[panel];
+}
+
+/* Optional per-node history bundle. Absent bundles fall back to the
+   polyarchy-only history carried inside forecasts.json. */
+async function loadHistory(panel) {
+  if (panel in S.history) return S.history[panel];
+  try {
+    const r = await fetch(`data/${panel}/history.json`);
+    S.history[panel] = r.ok ? await r.json() : null;
+  } catch (e) {
+    S.history[panel] = null;
+  }
+  return S.history[panel];
 }
 
 async function loadForecasts(panel) {
@@ -660,6 +674,7 @@ function renderDynamics() {
 
 async function renderTrajectories() {
   const fc = await loadForecasts(S.panel);
+  await loadHistory(S.panel);
   const d = S.data[S.panel];
   const byId = nodeById(d);
   const countries = Object.keys(fc.countries);
@@ -698,13 +713,58 @@ function drawTrajectory(fc, c) {
   const vh = meta.validated_horizon;
   const yearMax = meta.year_max;
 
-  /* History: polyarchy history is what the bundle carries. For other nodes,
-     the bundle has no history series, so the chart shows forecast only. */
-  const histYears = isNative ? c.history.years : [];
-  const histVals = isNative ? c.history.v2x_polyarchy : [];
+  /* History source: the optional history.json bundle carries every node,
+     keyed by country_name (matching forecasts.json) and merging all of a
+     country's observation segments into one null-padded series. Without
+     that bundle, only polyarchy history exists inside forecasts.json. */
+  let histYears = [], histVals = [];
+  const H = S.history[S.panel];
+  const hrec = H && H.countries && H.countries[S.trajCountry];
+  if (hrec && hrec.series && hrec.series[nodeId]) {
+    histYears = hrec.years;
+    histVals = hrec.series[nodeId];
+  } else if (isNative && c.history && c.history.v2x_polyarchy) {
+    histYears = c.history.years;
+    histVals = c.history.v2x_polyarchy;
+  }
+
+  // Window by year rather than by observation count, so a gap cannot pull
+  // much older segments into view.
   const histWindow = 40;
-  const hStart = Math.max(0, histYears.length - histWindow);
-  const hy = histYears.slice(hStart), hv = histVals.slice(hStart);
+  const winStart = yearMax - histWindow + 1;
+  const win = histYears
+    .map((y, i) => [y, histVals[i]])
+    .filter((p) => p[0] >= winStart && p[0] <= yearMax);
+
+  // Contiguous observed runs: a break in years, or a null, ends a run. Drawn
+  // as separate paths so a gap is never bridged by a line.
+  const runs = [];
+  let cur = [];
+  for (const [y, v] of win) {
+    const ok = v !== null && v !== undefined && !Number.isNaN(v);
+    if (ok && (!cur.length || y === cur[cur.length - 1][0] + 1)) cur.push([y, v]);
+    else { if (cur.length) runs.push(cur); cur = ok ? [[y, v]] : []; }
+  }
+  if (cur.length) runs.push(cur);
+
+  const hy = runs.flat().map((p) => p[0]);
+  const hv = runs.flat().map((p) => p[1]);
+
+  /* Persistence anchor: the last observed value of the FORECAST segment.
+     For a country with several segments this is not necessarily the last
+     value in the merged series, so the segment range is read from
+     segment_key ("Name [y0-y1]") when present. */
+  const segMatch = /\[(\d{4})-(\d{4})\]/.exec(c.segment_key || "");
+  const segLo = segMatch ? +segMatch[1] : -Infinity;
+  const segHi = segMatch ? +segMatch[2] : Infinity;
+  let anchor = null;
+  for (const [y, v] of runs.flat()) {
+    if (y >= segLo && y <= segHi) anchor = [y, v];
+  }
+  if (!anchor && runs.length) {
+    const last = runs[runs.length - 1];
+    anchor = last[last.length - 1];
+  }
 
   const fy = f0.years, med = f0.median, lo = f0.lo, hi = f0.hi;
   const splitIdx = fy.filter((y) => y - yearMax <= vh).length; // validated rows
@@ -741,29 +801,35 @@ function drawTrajectory(fc, c) {
     addBand(f, bandXs.slice(splitIdx - 1), bandLo.slice(splitIdx - 1), bandHi.slice(splitIdx - 1), "#2456c4", 0.08);
   }
 
-  // history
-  if (hy.length) addLine(f, hy.map((y, i) => [y, clamp(hv[i])]), "#16233b", { width: 2 });
+  // history: one path per contiguous run, so gaps stay gaps
+  runs.forEach((run) => {
+    if (run.length === 1) {
+      f.svg.appendChild(el("circle", { cx: f.x(run[0][0]), cy: f.y(clamp(run[0][1])), r: 2, fill: "#16233b" }));
+    } else {
+      addLine(f, run.map(([y, v]) => [y, clamp(v)]), "#16233b", { width: 2 });
+    }
+  });
 
-  // persistence overlay: last observed value carried forward (client-side, per brief)
-  if (hy.length) {
-    const lastVal = clamp(hv[hv.length - 1]);
-    addLine(f, [[yearMax, lastVal], [xmax, lastVal]], "#8a93a5", { width: 1.8, dash: "6 4" });
+  // persistence overlay: forecast segment's last observed value carried forward
+  if (anchor) {
+    const lastVal = clamp(anchor[1]);
+    addLine(f, [[anchor[0], lastVal], [xmax, lastVal]], "#8a93a5", { width: 1.8, dash: "6 4" });
   }
 
   // model median: solid to validated horizon, dashed+faded beyond
   const medPts = fy.map((y, i) => [y, clamp(med[i])]);
-  const bridge = hy.length ? [[yearMax, clamp(hv[hv.length - 1])]] : [];
+  const bridge = anchor ? [[anchor[0], clamp(anchor[1])]] : [];
   addLine(f, bridge.concat(medPts.slice(0, splitIdx)), "#2456c4", { width: 2.4 });
   if (splitIdx < fy.length) {
     addLine(f, medPts.slice(splitIdx - 1), "#2456c4", { width: 2, dash: "5 4", opacity: 0.55 });
   }
 
   $("traj-legend").innerHTML =
-    `<span class="key"><span class="key-line" style="border-color:#16233b"></span>observed history</span>` +
+    (hy.length ? `<span class="key"><span class="key-line" style="border-color:#16233b"></span>observed history</span>` : "") +
     `<span class="key"><span class="key-line" style="border-color:#2456c4"></span>model-implied median (h ≤ ${vh})</span>` +
     `<span class="key"><span class="key-line dashed" style="border-color:#2456c4;opacity:.6"></span>h > ${vh} <span class="badge badge-unvalidated">unvalidated</span></span>` +
     `<span class="key"><span class="key-band" style="background:#2456c4;opacity:.2"></span>ensemble min–max (3 seeds)</span>` +
-    `<span class="key"><span class="key-line dashed" style="border-color:#8a93a5"></span>persistence (last value carried forward)</span>`;
+    (hy.length ? `<span class="key"><span class="key-line dashed" style="border-color:#8a93a5"></span>persistence (last value carried forward)</span>` : "");
 
   const seg = c.segment_key !== S.trajCountry ? ` Series segment: ${c.segment_key}.` : "";
   $("traj-note").textContent =
