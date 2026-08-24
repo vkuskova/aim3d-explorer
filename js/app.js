@@ -832,4 +832,5 @@ function init() {
   showView(location.hash.slice(1) || "structure");
 }
 
+window.S = S; // read by js/assistant.js for panel awareness
 document.addEventListener("DOMContentLoaded", init);

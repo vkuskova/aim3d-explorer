@@ -423,3 +423,98 @@ select:focus-visible, input:focus-visible, a:focus-visible {
   .masthead-inner { padding: 22px 18px 18px; }
   .brand-title { font-size: 24px; }
 }
+
+/* ── Tier-3 assistant drawer ──────────────────────────── */
+#asst-launcher {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 60;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 22px;
+  padding: 11px 18px;
+  cursor: pointer;
+  box-shadow: 0 3px 14px rgba(22,35,59,0.3);
+}
+#asst-launcher:hover { background: var(--blue-deep); }
+#asst-drawer {
+  position: fixed;
+  right: 22px;
+  bottom: 74px;
+  z-index: 60;
+  width: min(420px, calc(100vw - 44px));
+  height: min(560px, calc(100vh - 120px));
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(22,35,59,0.25);
+  overflow: hidden;
+}
+.asst-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--ink);
+  color: #fff;
+}
+.asst-head strong { font-family: var(--serif); font-size: 15px; }
+.asst-panel-tag {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  margin-left: 8px;
+  color: #93a3c4;
+}
+.asst-disclaimer {
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--paper);
+}
+.asst-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.asst-msg {
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 88%;
+  white-space: pre-wrap;
+}
+.asst-user { align-self: flex-end; background: var(--blue-soft); color: var(--ink); }
+.asst-assistant { align-self: flex-start; background: var(--line-soft); color: var(--text); }
+.asst-wait { color: var(--muted); }
+.asst-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+.asst-form textarea {
+  flex: 1;
+  font-family: var(--sans);
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  resize: none;
+}
+@media (max-width: 880px) {
+  #asst-drawer { right: 10px; bottom: 66px; width: calc(100vw - 20px); }
+  #asst-launcher { right: 10px; bottom: 14px; }
+}
