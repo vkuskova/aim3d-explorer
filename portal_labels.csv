@@ -1,0 +1,77 @@
+panel,id,kind,bundle_label,display_label,status
+century_factors,v2x_polyarchy,protected_observed,Electoral democracy (computed),Electoral democracy (polyarchy),CODEBOOK
+century_factors,F01,reflective_factor,Factor: v2x_freexp_altinf / v2cafres / v2cafexch,Liberal-institutional core,PROPOSE
+century_factors,F02,reflective_factor,Factor: v2peasjgen / v2peasbgen / v2clgencl,Egalitarianism,BRIEF
+century_factors,F03,reflective_factor,Factor: v2excrptps / v2exthftps / v2exbribe,Corruption and clientelism,PROPOSE
+century_factors,F04,reflective_factor,Factor: v2psprbrch / v2psorgs / v2psplats,Party institutionalization,PROPOSE
+century_factors,F05,reflective_factor,Factor: v2cademmob / v2caviol / v2cagenmob,Mass mobilization,BRIEF
+century_factors,F06,reflective_factor,Factor: v2svdomaut / v2svinlaut,Sovereign autonomy,PROPOSE
+century_factors,C_v2casoe,formative_composite,Composite: v2casoe (alr-mean),State of emergency (composite),CODEBOOK
+century_factors,C_v2csstruc,formative_composite,Composite: v2csstruc (alr-mean),CSO structure (composite),CODEBOOK
+century_factors,v2caconmob,singleton,v2caconmob,Mass mobilization concentration,CODEBOOK
+century_factors,v2ddyrall,singleton,v2ddyrall,Number of popular votes this year,CODEBOOK
+century_factors,v2eldonate,singleton,v2eldonate,Disclosure of campaign donations,CODEBOOK
+century_factors,v2elffelrbin,singleton,v2elffelrbin,Subnational elections held,CODEBOOK
+century_factors,v2elsnlsff,singleton,v2elsnlsff,Subnational election unevenness,CODEBOOK
+century_factors,v2exl_legitperf,singleton,v2exl_legitperf,Legitimation: performance,CODEBOOK
+century_factors,v2exl_legitratio,singleton,v2exl_legitratio,Legitimation: rational-legal,CODEBOOK
+century_factors,v2jupoatck,singleton,v2jupoatck,Government attacks on the judiciary,CODEBOOK
+century_factors,v2jureform,singleton,v2jureform,Judicial reform,CODEBOOK
+century_factors,v2pepwrgeo,singleton,v2pepwrgeo,Power distributed by urban–rural location,CODEBOOK
+century_factors,v2pscohesv,singleton,v2pscohesv,Legislative party cohesion,CODEBOOK
+century_factors,v2pscomprg,singleton,v2pscomprg,Party competition across regions,CODEBOOK
+century_factors,v2psnatpar,singleton,v2psnatpar,National party control,CODEBOOK
+century_factors,v2stfisccap,singleton,v2stfisccap,State fiscal capacity,CODEBOOK
+century_factors,v2strenadm,singleton,v2strenadm,Bureaucratic remuneration,CODEBOOK
+century_factors,v2strenarm,singleton,v2strenarm,Remuneration in the armed forces,CODEBOOK
+century_factors,v2svstterr,singleton,v2svstterr,State authority over territory,CODEBOOK
+century_factors,v2x_elecoff,singleton,v2x_elecoff,Elected officials index,CODEBOOK
+century_factors,v2xdd_dd,singleton,v2xdd_dd,Direct popular vote index,CODEBOOK
+century_factors,v2xel_regelec,singleton,v2xel_regelec,Regional elections index,CODEBOOK
+modern_factors,v2x_polyarchy,protected_observed,Electoral democracy (computed),Electoral democracy (polyarchy),CODEBOOK
+modern_factors,F01,reflective_factor,Factor: v2x_freexp_altinf / v2x_frassoc_thick / v2cafres,Liberal-institutional core,PROPOSE
+modern_factors,F02,reflective_factor,Factor: v2peapsecon / v2peasjsoecon / v2peapssoc,Inclusive development,BRIEF
+modern_factors,F03,reflective_factor,Factor: Life expectancy / Informational globalization (de facto) / Urban population share,Socioeconomic modernization,PROPOSE
+modern_factors,F04,reflective_factor,"Factor: Population (Maddison) / Land area / GNI, current US$",Country size,PROPOSE
+modern_factors,F05,reflective_factor,Factor: v2psprbrch / v2psorgs / v2pscohesv,Party institutionalization,BRIEF
+modern_factors,F06,reflective_factor,Factor: v2cademmob / v2cagenmob / v2cacamps,Mass mobilization,BRIEF
+modern_factors,F08,reflective_factor,Factor: Net migration rate / Population growth (WPP),Migration and natural population change,PROPOSE
+modern_factors,F09,reflective_factor,"Factor: GDP pc, current US$ / GDP pc, const 2015 US$ / GDP per capita (Maddison)",Income level,PROPOSE
+modern_factors,F11,reflective_factor,Factor: GDP pc growth / GDP growth,Economic growth,PROPOSE
+modern_factors,F14,reflective_factor,Factor: Population growth / Urban population growth,Population growth (WB),PROPOSE
+modern_factors,C_v2casoe,formative_composite,Composite: v2casoe (alr-mean),State of emergency (composite),CODEBOOK
+modern_factors,C_v2csstruc,formative_composite,Composite: v2csstruc (alr-mean),CSO structure (composite),CODEBOOK
+modern_factors,KOFFiGIdf,singleton,Financial globalization (de facto),Financial globalization (de facto),KEEP
+modern_factors,KOFFiGIdj,singleton,Financial globalization (de jure),Financial globalization (de jure),KEEP
+modern_factors,KOFPoGIdj,singleton,Political globalization (de jure),Political globalization (de jure),KEEP
+modern_factors,KOFTrGIdf,singleton,Trade globalization (de facto),Trade globalization (de facto),KEEP
+modern_factors,v2caconmob,singleton,v2caconmob,Mass mobilization concentration,CODEBOOK
+modern_factors,v2canonpol,singleton,v2canonpol,Engagement in independent non-political associations,CODEBOOK
+modern_factors,v2ddyrall,singleton,v2ddyrall,Number of popular votes this year,CODEBOOK
+modern_factors,v2eldonate,singleton,v2eldonate,Disclosure of campaign donations,CODEBOOK
+modern_factors,v2elffelrbin,singleton,v2elffelrbin,Subnational elections held,CODEBOOK
+modern_factors,v2elpubfin,singleton,v2elpubfin,Public campaign finance,CODEBOOK
+modern_factors,v2exagehos,singleton,v2exagehos,Age of head of state,CODEBOOK
+modern_factors,v2exl_legitperf,singleton,v2exl_legitperf,Legitimation: performance,CODEBOOK
+modern_factors,v2exl_legitratio,singleton,v2exl_legitratio,Legitimation: rational-legal,CODEBOOK
+modern_factors,v2juaccnt,singleton,v2juaccnt,Judicial accountability,CODEBOOK
+modern_factors,v2jupoatck,singleton,v2jupoatck,Government attacks on the judiciary,CODEBOOK
+modern_factors,v2jureform,singleton,v2jureform,Judicial reform,CODEBOOK
+modern_factors,v2mefemjrn,singleton,v2mefemjrn,Female journalists,CODEBOOK
+modern_factors,v2pscomprg,singleton,v2pscomprg,Party competition across regions,CODEBOOK
+modern_factors,v2psnatpar,singleton,v2psnatpar,National party control,CODEBOOK
+modern_factors,v2stfisccap,singleton,v2stfisccap,State fiscal capacity,CODEBOOK
+modern_factors,v2strenadm,singleton,v2strenadm,Bureaucratic remuneration,CODEBOOK
+modern_factors,v2strenarm,singleton,v2strenarm,Remuneration in the armed forces,CODEBOOK
+modern_factors,v2svdomaut,singleton,v2svdomaut,Domestic autonomy,CODEBOOK
+modern_factors,v2svinlaut,singleton,v2svinlaut,International autonomy,CODEBOOK
+modern_factors,v2svstterr,singleton,v2svstterr,State authority over territory,CODEBOOK
+modern_factors,v2x_elecoff,singleton,v2x_elecoff,Elected officials index,CODEBOOK
+modern_factors,v2xdd_dd,singleton,v2xdd_dd,Direct popular vote index,CODEBOOK
+modern_factors,v2xel_regelec,singleton,v2xel_regelec,Regional elections index,CODEBOOK
+modern_factors,wb_agri_land_share,singleton,Agricultural land share,Agricultural land share,KEEP
+modern_factors,wb_oil_rents_gdp,singleton,Oil rents (% GDP),Oil rents (% GDP),KEEP
+modern_factors,wb_pop_density,singleton,Population density,Population density,KEEP
+modern_factors,wb_rural_pop_growth,singleton,Rural population growth,Rural population growth,KEEP
+modern_factors,wpp_net_migrants,singleton,Net migrants,Net migrants,KEEP
+modern_factors,wpp_sex_ratio_jul,singleton,Sex ratio,Sex ratio,KEEP

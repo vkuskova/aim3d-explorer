@@ -46,17 +46,6 @@ async function loadPanel(panel) {
     fetchJSON(`${base}/dcnar.json`),
     fetchJSON(`${base}/validation.json`),
   ]);
-  // Optional display-name overlay (curated; see portal_labels.csv).
-  // Bundle labels are preserved in node.bundle_label.
-  let labels = {};
-  try {
-    const r = await fetch(`${base}/labels.json`);
-    if (r.ok) labels = await r.json();
-  } catch (e) { /* overlay is optional */ }
-  nodes.forEach((n) => {
-    n.bundle_label = n.label;
-    if (labels[n.id]) n.label = labels[n.id];
-  });
   // edges.json wraps the list: {n_seeds, rule, edges:[...]}
   const edgeList = Array.isArray(edges) ? edges : edges.edges;
   S.data[panel] = { manifest, nodes, edges: edgeList, edgeMeta: Array.isArray(edges) ? {} : edges, ice, dcnar, validation };
@@ -227,8 +216,7 @@ function renderStructure() {
   ids.forEach((id) => {
     const n = byId[id];
     const cls = S.egoNode === id ? ' class="is-selected"' : "";
-    const tip = `${n.label}\u0001${id}${isStructural(n) ? "\n" + STRUCTURAL_TIP : ""}`;
-    hr += `<th${cls}><button data-node="${esc(id)}" data-tip="${esc(tip)}">${esc(id)}</button></th>`;
+    hr += `<th${cls} title="${esc(n.label)}${isStructural(n) ? " — " + esc(STRUCTURAL_TIP) : ""}"><button data-node="${esc(id)}">${esc(id)}</button></th>`;
   });
   thead.innerHTML = hr + "</tr>";
   tbl.appendChild(thead);
@@ -238,7 +226,7 @@ function renderStructure() {
     const tr = document.createElement("tr");
     const sn = byId[src];
     const selCls = S.egoNode === src ? ' class="is-selected"' : "";
-    let row = `<th${selCls}><button data-node="${esc(src)}" data-tip="${esc(sn.label + "\u0001" + src)}">${esc(src)}</button></th>`;
+    let row = `<th${selCls} title="${esc(sn.label)}"><button data-node="${esc(src)}">${esc(src)}</button></th>`;
     ids.forEach((tgt) => {
       if (src === tgt) { row += '<td class="diag"></td>'; return; }
       const tn = byId[tgt];
@@ -247,7 +235,7 @@ function renderStructure() {
       if (!e) { row += "<td></td>"; return; }
       const col = bluescale(0.12 + 0.88 * (e.score_median / maxScore));
       const op = e.consensus ? 1 : 0.38;
-      const tip = `${byId[src].label} → ${tn.label}\u0001${src} → ${tgt}\nscore ${fmt(e.score_median, 4)} [${fmt(e.score_min, 4)}–${fmt(e.score_max, 4)}]\nretained ${e.retention}${e.consensus ? " (consensus)" : ""}${e.aggregation_adjacent ? "\n" + AGG_TIP : ""}`;
+      const tip = `${src} → ${tgt}\nscore ${fmt(e.score_median, 4)} [${fmt(e.score_min, 4)}–${fmt(e.score_max, 4)}]\nretained ${e.retention}${e.consensus ? " (consensus)" : ""}${e.aggregation_adjacent ? "\n" + AGG_TIP : ""}`;
       row += `<td style="background:${col};opacity:${op}" data-tip="${esc(tip)}">${e.aggregation_adjacent ? '<span class="agg-mark"></span>' : ""}</td>`;
     });
     tr.innerHTML = row;
@@ -262,54 +250,7 @@ function renderStructure() {
   tbl.querySelectorAll("button[data-node]").forEach((b) =>
     b.addEventListener("click", () => { S.egoNode = b.dataset.node; renderStructure(); }));
 
-  attachMatrixTooltip(wrap);
-
   renderEgo();
-}
-
-/* Floating instant tooltip for the matrix (axis labels + cells). */
-function ensureTooltipEl() {
-  let t = document.getElementById("tooltip");
-  if (!t) {
-    t = document.createElement("div");
-    t.id = "tooltip";
-    t.className = "tooltip";
-    t.hidden = true;
-    document.body.appendChild(t);
-  }
-  return t;
-}
-function attachMatrixTooltip(wrap) {
-  const tip = ensureTooltipEl();
-  const show = (target, ev) => {
-    const raw = target.dataset.tip;
-    const [head, rest] = raw.split("\u0001");
-    tip.innerHTML = rest !== undefined
-      ? `${esc(head)}<span class="tip-id">${esc(rest)}</span>`
-      : esc(head);
-    tip.hidden = false;
-    move(ev);
-  };
-  const move = (ev) => {
-    const pad = 14;
-    const w = tip.offsetWidth, h = tip.offsetHeight;
-    let x = ev.clientX + pad, y = ev.clientY + pad;
-    if (x + w > window.innerWidth - 8) x = ev.clientX - w - pad;
-    if (y + h > window.innerHeight - 8) y = ev.clientY - h - pad;
-    tip.style.left = x + "px";
-    tip.style.top = y + "px";
-  };
-  wrap.addEventListener("mouseover", (ev) => {
-    const t = ev.target.closest("[data-tip]");
-    if (t) show(t, ev);
-  });
-  wrap.addEventListener("mousemove", (ev) => {
-    if (!tip.hidden) move(ev);
-  });
-  wrap.addEventListener("mouseout", (ev) => {
-    if (!ev.relatedTarget || !ev.relatedTarget.closest || !ev.relatedTarget.closest("[data-tip]")) tip.hidden = true;
-  });
-  wrap.addEventListener("mouseleave", () => { tip.hidden = true; });
 }
 
 function renderEgo() {
@@ -324,11 +265,10 @@ function renderEgo() {
   const out = d.edges.filter((e) => e.source === n.id).sort((a, b) => b.score_median - a.score_median);
 
   const edgeRow = (e, other) => {
-    const o = byId[other];
     const badges =
       (e.consensus ? '<span class="badge badge-consensus">3/3</span>' : `<span class="badge badge-majority">${esc(e.retention)}</span>`) +
       (e.aggregation_adjacent ? ` <span class="badge badge-agg" title="${esc(AGG_TIP)}">aggregation-adjacent</span>` : "");
-    return `<div class="ego-edge"><span title="${esc(other)}">${esc(o ? o.label : other)}</span><span>${badges} <span class="mono">${fmt(e.score_median, 4)}</span></span></div>`;
+    return `<div class="ego-edge"><span class="mono">${esc(other)}</span><span>${badges} <span class="mono">${fmt(e.score_median, 4)}</span></span></div>`;
   };
 
   const members = n.members && n.members.length
@@ -421,16 +361,8 @@ const REGIMES = [
 function populateIceSelect() {
   const d = S.data[S.panel];
   const sel = $("ice-edge");
-  const byId = nodeById(d);
-  const disp = (id) => (byId[id] ? byId[id].label : id);
-  const keys = Object.keys(d.ice).sort((a, b) => {
-    const [as, at] = a.split("->"), [bs, bt] = b.split("->");
-    return disp(as).localeCompare(disp(bs)) || disp(at).localeCompare(disp(bt));
-  });
-  sel.innerHTML = keys.map((k) => {
-    const [src, tgt] = k.split("->");
-    return `<option value="${esc(k)}">${esc(disp(src))} → ${esc(disp(tgt))}</option>`;
-  }).join("");
+  const keys = Object.keys(d.ice).sort();
+  sel.innerHTML = keys.map((k) => `<option value="${esc(k)}">${esc(k.replace("->", " → "))}</option>`).join("");
   // Prefer an edge into polyarchy as the opening example if one exists.
   const poly = keys.find((k) => k.endsWith("->v2x_polyarchy") &&
     !d.edges.find((e) => `${e.source}->${e.target}` === k && e.aggregation_adjacent));
@@ -443,9 +375,6 @@ function renderICE() {
   const rec = d.ice[key];
   if (!rec) return;
   const [src, tgt] = key.split("->");
-  const byId = nodeById(d);
-  const srcLabel = byId[src] ? byId[src].label : src;
-  const tgtLabel = byId[tgt] ? byId[tgt].label : tgt;
 
   let ymin = Infinity, ymax = -Infinity, xmin = Infinity, xmax = -Infinity;
   REGIMES.forEach((r) => {
@@ -458,8 +387,8 @@ function renderICE() {
 
   const f = chartFrame($("ice-chart"), {
     xmin, xmax, ymin: ymin - pad, ymax: ymax + pad,
-    xlabel: `${srcLabel} (standardized units)`,
-    ylabel: `Effect on ${tgtLabel} (standardized units)`,
+    xlabel: `${src} (standardized units)`,
+    ylabel: `Effect on ${tgt} (standardized units)`,
   });
   f.svg.appendChild(el("line", { x1: f.m.left, x2: f.W - f.m.right, y1: f.y(0), y2: f.y(0), stroke: "#b8bdc7", "stroke-dasharray": "3 3" }));
 
@@ -502,11 +431,8 @@ function renderDynamics() {
     if (series.v2x_polyarchy) S.lambdaSel.add("v2x_polyarchy");
   }
   const chips = $("lambda-chips");
-  const byIdL = nodeById(d);
-  chips.innerHTML = allIds.map((id) => {
-    const lbl = byIdL[id] ? byIdL[id].label : id;
-    return `<button class="chip ${S.lambdaSel.has(id) ? "on" : ""}" data-id="${esc(id)}" title="${esc(lbl)}">${esc(id)}</button>`;
-  }).join("");
+  chips.innerHTML = allIds.map((id) =>
+    `<button class="chip ${S.lambdaSel.has(id) ? "on" : ""}" data-id="${esc(id)}">${esc(id)}</button>`).join("");
   chips.querySelectorAll(".chip").forEach((c) =>
     c.addEventListener("click", () => {
       const id = c.dataset.id;
@@ -558,14 +484,12 @@ function renderDynamics() {
 
   /* IRF */
   const irf = d.dcnar.irf;
-  const shockLabel = byIdL[irf.shock_var] ? byIdL[irf.shock_var].label : irf.shock_var;
-  $("irf-title").textContent = `Impulse responses — ${meta.shock_size_sd} SD shock to ${shockLabel} (${irf.shock_var})`;
+  $("irf-title").textContent = `Impulse responses — ${meta.shock_size_sd} SD shock to ${irf.shock_var}`;
   const nodes = Object.keys(irf.response);
   const vmax = Math.max(...nodes.flatMap((n) => irf.response[n].map((v) => Math.abs(v)))) || 1;
   let html = `<table class="irf-table"><thead><tr><th>node</th>${irf.horizons.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>`;
   nodes.forEach((nid) => {
-    const rowLbl = byIdL[nid] ? byIdL[nid].label : nid;
-    html += `<tr><th title="${esc(rowLbl)}">${esc(nid)}</th>`;
+    html += `<tr><th>${esc(nid)}</th>`;
     irf.response[nid].forEach((v) => {
       const bg = divergingColor(v / vmax);
       const dark = Math.abs(v / vmax) > 0.6;
@@ -764,10 +688,6 @@ function renderMethods() {
         <dt>weights</dt><dd>${esc(fmeta.weights)}</dd>
         <dt>uncertainty</dt><dd>${esc(fmeta.uncertainty)}</dd>
       </dl>
-    </div>
-    <div class="methods-card">
-      <h3>Node naming</h3>
-      <p>Observed indicators display their V-Dem codebook names (v15). Latent factors (F01, F05, …) display interpretive labels assigned by the AIM-3D Lab; the constituent V-Dem indicators for every factor are listed in its neighborhood view on the Structure page. Factor numbering is panel-specific: the same number does not denote the same construct across the Century and Modern views.</p>
     </div>
     <div class="methods-card">
       <h3>Data &amp; citation</h3>

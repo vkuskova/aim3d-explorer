@@ -1,0 +1,54 @@
+{
+ "panel": "modern_factors",
+ "generated": "2026-08-23",
+ "n_nodes": 47,
+ "n_edges_majority": 241,
+ "n_edges_consensus": 182,
+ "n_edges_aggregation_adjacent": 3,
+ "panel_meta": {
+  "n_rows": 5654,
+  "n_countries": 150,
+  "years": [
+   1970,
+   2021
+  ],
+  "maxlags": 3,
+  "usable_windows": 4305
+ },
+ "provenance": {
+  "measurement": "EFA (ML+varimax), parallel-analysis K, salience theta=0.50; compositional families as alr-mean composites; groupwise BLUP scores",
+  "edge_selection": "K=3 seed ensemble; masked NAVAR; DM ablation; BH q=0.05; between-means GMM threshold; consensus = retained in all seeds",
+  "stability": {
+   "mode": "constrained",
+   "epsilon_used": 0.03,
+   "rho_tau1": 0.9870920791041199,
+   "rho_max": 0.9993210155338477,
+   "rho_tau1_unconstrained": 1.031265954166685,
+   "rho_max_unconstrained": 1.033469209794108
+  },
+  "forecasts": {
+   "panel": "modern_factors",
+   "seeds": [
+    42,
+    7,
+    123
+   ],
+   "horizon": 10,
+   "validated_horizon": 5,
+   "recency_years": 2,
+   "year_max": 2021,
+   "n_countries": 138,
+   "n_validation_segments": 160,
+   "weights": "train-fitted (validated models)",
+   "uncertainty": "ensemble min/median/max across seeds"
+  }
+ },
+ "files": [
+  "nodes.json",
+  "edges.json",
+  "ice.json",
+  "dcnar.json",
+  "forecasts.json",
+  "validation.json"
+ ]
+}
