@@ -2,7 +2,7 @@
 
 Interactive portal for exploring the causal structure of democratic development and decline, from the **AIM-3D Lab** at the University of Notre Dame's Lucy Family Institute for Data & Society.
 
-**Live portal:** https://vkuskova.github.io/aim3d-explorer/
+**Live portal:** https://aim3d.github.io/aim3d-explorer/
 
 ## What this is
 
