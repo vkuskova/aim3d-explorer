@@ -19,8 +19,8 @@
  */
 
 // ── Config (already set for this deployment; no editing needed) ──────────
-const PORTAL_ORIGIN = "https://vkuskova.github.io";
-const DIGEST_BASE = "https://vkuskova.github.io/aim3d-explorer/data";
+const PORTAL_ORIGIN = "https://aim3d.github.io";
+const DIGEST_BASE = "https://aim3d.github.io/aim3d-explorer/data";
 // If the GitHub Pages address ever changes, these are the only two lines
 // to update. PORTAL_ORIGIN is the origin only: no repo path, no trailing
 // slash. DIGEST_BASE ends at /data; the Worker appends the rest.
