@@ -12,6 +12,48 @@ say when that needs re-pasting.
 
 ---
 
+## v18 — 2026-08-24 · corrected bundles installed
+Ships the Stage 6/7/7b v2 re-export for both panels. Verified before
+packaging: all twenty validation figures reproduce the handoff table exactly;
+manifest edge counts agree with `edges.json` (century 152/112/3, modern
+241/182/3); every edge endpoint and ICE key resolves to a node; no edge
+targets a structural node; `nodes.json[].forecast === false` agrees exactly
+with `role !== "dynamic"` (modern: F02, F04, F05, v2stfisccap, v2strenadm,
+wb_agri_land_share, wb_pop_density, wpp_sex_ratio_jul); forecast keys equal
+the endogenous set (century 29, modern 39); history covers every node
+including structural ones, with polyarchy agreeing to 5.0e-05.
+
+- Digests regenerated from the new bundles; the labels overlay still resolves
+  for every node in both panels.
+- Methods reports the endogenous/structural split and states that accuracy
+  figures cover endogenous nodes only.
+- **Note:** the handoff §3 says the per-row `validated` flag is still in
+  `forecasts.json`; it is not present in either panel. No impact — the
+  validated/unvalidated split has always been drawn from
+  `meta.validated_horizon`.
+
+## v17 — 2026-08-24 · endogenous-only forecasts, portal moved
+Code prepared for the re-export; bundles still the old ones. Superseded by
+v18, which contains both.
+
+- Portal moved to `https://aim3d.github.io/aim3d-explorer/`. Worker
+  `PORTAL_ORIGIN` and `DIGEST_BASE` updated accordingly.
+  **Requires re-pasting worker.js into Cloudflare.**
+- Trajectories branch on forecast availability: nodes with
+  `nodes.json[].forecast === false` (8 structural nodes on the modern panel)
+  remain selectable, are labelled "(source-only)" in the picker, and render
+  observed history alone — no model line, no ensemble band, no persistence
+  reference — with copy explaining why. A node absent from `forecasts.json`
+  is treated as expected, not as an error.
+- The node picker is built from `nodes.json` rather than from a country's
+  forecast keys, so source-only nodes are reachable at all.
+- Validation panel opens with the framing supplied by the pipeline session.
+  One word changed from their draft: "necessary for prediction" became
+  "necessary for forecast accuracy", because the portal's own guardrail test
+  cannot distinguish that use of "prediction" from calling a trajectory one.
+- `test_history.js` gained six checks covering source-only rendering; it
+  edits the bundles in place and restores them afterwards.
+
 ## v16 — 2026-08-24 · modern history bundle
 Ships `data/modern_factors/history.json` (2.42 MB, 150 countries, 47 nodes).
 Both panels now have per-node history; the Trajectories view shows observed

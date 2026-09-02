@@ -124,6 +124,55 @@ process.on("exit", restore);
     check("observation runs render separately across a gap",
       runs.length + isolated >= 2, `${runs.length} paths + ${isolated} points`);
 
+    // ── source-only nodes (nodes.json[].forecast === false) ──
+    // Simulate the v2 bundle shape in memory by hiding a node's series.
+    const fcPath = path.join(root, `data/${PANEL}/forecasts.json`);
+    const nodesPath = path.join(root, `data/${PANEL}/nodes.json`);
+    const fcBak = fs.readFileSync(fcPath, "utf8");
+    const ndBak = fs.readFileSync(nodesPath, "utf8");
+    try {
+      const nodes = JSON.parse(ndBak);
+      const victim = nodes.find((n) => n.id !== "v2x_polyarchy").id;
+      nodes.forEach((n) => (n.forecast = n.id !== victim));
+      fs.writeFileSync(nodesPath, JSON.stringify(nodes));
+      const fcj = JSON.parse(fcBak);
+      Object.values(fcj.countries).forEach((c) => delete c.forecast[victim]);
+      fs.writeFileSync(fcPath, JSON.stringify(fcj));
+
+      const dom2 = new JSDOM(fs.readFileSync(path.join(root, "index.html"), "utf8"),
+        { runScripts: "outside-only", url: "http://localhost/", pretendToBeVisual: true });
+      const w2 = dom2.window;
+      w2.fetch = window.fetch;
+      Object.defineProperty(w2.SVGElement.prototype, "clientWidth", { get: () => 760 });
+      Object.defineProperty(w2.SVGElement.prototype, "clientHeight", { get: () => 340 });
+      w2.HTMLElement.prototype.scrollIntoView = () => {};
+      w2.eval(fs.readFileSync(path.join(root, "js/app.js"), "utf8"));
+      await sleep(500);
+      const d2 = w2.document;
+      w2.location.hash = "#trajectories";
+      w2.dispatchEvent(new w2.Event("hashchange"));
+      await sleep(700);
+      const opts = [...d2.getElementById("traj-node").options];
+      check("source-only node still selectable",
+        opts.some((o) => o.value === victim));
+      check("source-only node labelled in the picker",
+        opts.some((o) => o.value === victim && o.textContent.includes("(source-only)")));
+      d2.getElementById("traj-node").value = victim;
+      d2.getElementById("traj-node").dispatchEvent(new w2.Event("change"));
+      await sleep(300);
+      const svg2 = d2.getElementById("traj-chart").innerHTML;
+      check("source-only node draws history but no model line",
+        /stroke="#16233b"/.test(svg2) && !/stroke="#2456c4"/.test(svg2));
+      check("source-only node draws no persistence reference",
+        !/stroke="#8a93a5"/.test(svg2));
+      check("source-only node explains itself",
+        d2.getElementById("traj-note").textContent.startsWith("Source-only variable"));
+      check("source-only chart has no NaN", !/NaN/.test(svg2));
+    } finally {
+      fs.writeFileSync(fcPath, fcBak);
+      fs.writeFileSync(nodesPath, ndBak);
+    }
+
     console.log(`\n${failures === 0 ? "ALL HISTORY CHECKS PASSED" : failures + " FAILED"}`);
   } finally {
     restore();

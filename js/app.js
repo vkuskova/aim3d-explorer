@@ -7,7 +7,7 @@
 
 /* ───────────────────────── State ───────────────────────── */
 
-const BUILD = "v16";
+const BUILD = "v18";
 const BUILD_DATE = "2026-08-24";
 
 const PANELS = {
@@ -186,6 +186,19 @@ function orderedNodeIds(d) {
     .map((n) => n.id);
 }
 function isStructural(n) { return n.role !== "dynamic"; }
+
+/* A node is forecast when the bundle says so and the country actually carries
+   a series. nodes.json[].forecast is authoritative where present; older
+   bundles are handled by falling back to presence in forecasts.json. */
+function hasForecast(node, countryRec, id) {
+  if (node && node.forecast === false) return false;
+  return !!(countryRec && countryRec.forecast && countryRec.forecast[id]);
+}
+
+const SOURCE_ONLY_COPY =
+  "Source-only variable: the model uses it to predict other variables but " +
+  "does not forecast it. Observed history is shown; there is no model line, " +
+  "ensemble band, or persistence reference.";
 
 const STRUCTURAL_TIP =
   "Structural (source-only): this node is never modeled as a target. " +
@@ -691,13 +704,17 @@ async function renderTrajectories() {
   cSel.value = S.trajCountry;
 
   const sample = fc.countries[S.trajCountry];
-  const nodeIds = Object.keys(sample.forecast)
-    .sort((a, b) => (a === "v2x_polyarchy" ? -1 : b === "v2x_polyarchy" ? 1 : a.localeCompare(b)));
+  /* Every node is selectable, including structural (source-only) nodes that
+     carry no forecast: those show observed history alone. A node absent from
+     forecasts.json is expected, not an error. */
+  const nodeIds = orderedNodeIds(d)
+    .sort((a, b) => (a === "v2x_polyarchy" ? -1 : b === "v2x_polyarchy" ? 1 : 0));
   const nSel = $("traj-node");
   if (nSel.dataset.panel !== S.panel) {
     nSel.innerHTML = nodeIds.map((id) => {
       const lbl = byId[id] ? byId[id].label : id;
-      return `<option value="${esc(id)}">${esc(id)} — ${esc(lbl)}</option>`;
+      const noFc = !hasForecast(byId[id], sample, id);
+      return `<option value="${esc(id)}">${esc(id)} — ${esc(lbl)}${noFc ? " (source-only)" : ""}</option>`;
     }).join("");
     nSel.dataset.panel = S.panel;
     if (!nodeIds.includes(S.trajNode)) S.trajNode = "v2x_polyarchy";
@@ -711,8 +728,14 @@ async function renderTrajectories() {
 function drawTrajectory(fc, c) {
   const meta = fc.meta;
   const nodeId = S.trajNode;
-  const f0 = c.forecast[nodeId];
-  const isNative = f0.units === "native";
+  const d0 = S.data[S.panel];
+  const node = nodeById(d0)[nodeId];
+  const f0 = hasForecast(node, c, nodeId) ? c.forecast[nodeId] : null;
+  const H0 = S.history[S.panel];
+  const unitsOf = (f0 && f0.units) ||
+    (H0 && H0.units && H0.units[nodeId]) ||
+    (nodeId === "v2x_polyarchy" ? "native" : "standardized");
+  const isNative = unitsOf === "native";
   const vh = meta.validated_horizon;
   const yearMax = meta.year_max;
 
@@ -769,7 +792,8 @@ function drawTrajectory(fc, c) {
     anchor = last[last.length - 1];
   }
 
-  const fy = f0.years, med = f0.median, lo = f0.lo, hi = f0.hi;
+  const fy = f0 ? f0.years : [], med = f0 ? f0.median : [],
+        lo = f0 ? f0.lo : [], hi = f0 ? f0.hi : [];
   const splitIdx = fy.filter((y) => y - yearMax <= vh).length; // validated rows
 
   const clamp = (v) => isNative ? Math.max(0, Math.min(1, v)) : v;
@@ -778,8 +802,8 @@ function drawTrajectory(fc, c) {
   if (isNative) { ymin = Math.max(0, ymin - 0.05); ymax = Math.min(1, ymax + 0.05); }
   else { const p = (ymax - ymin) * 0.1 || 0.1; ymin -= p; ymax += p; }
 
-  const xmin = hy.length ? hy[0] : fy[0] - 1;
-  const xmax = fy[fy.length - 1];
+  const xmin = hy.length ? hy[0] : (fy.length ? fy[0] - 1 : yearMax - 10);
+  const xmax = fy.length ? fy[fy.length - 1] : yearMax;
 
   const f = chartFrame($("traj-chart"), {
     xmin, xmax, ymin, ymax,
@@ -788,8 +812,9 @@ function drawTrajectory(fc, c) {
     xticks: (() => { const t = []; for (let y = Math.ceil(xmin / 10) * 10; y <= xmax; y += 10) t.push(y); return t; })(),
   });
 
-  // validated/unvalidated boundary shading
+  // validated/unvalidated boundary shading (forecast nodes only)
   const vEnd = yearMax + vh;
+  if (f0) {
   f.svg.appendChild(el("rect", {
     x: f.x(vEnd), y: f.m.top, width: Math.max(0, f.x(xmax) - f.x(vEnd)), height: f.H - f.m.top - f.m.bottom,
     fill: "#f6f0ee",
@@ -797,11 +822,12 @@ function drawTrajectory(fc, c) {
   f.svg.appendChild(el("text", { x: f.x(vEnd) + 6, y: f.m.top + 14, "font-size": 10.5, fill: "#b3372e", "font-family": "IBM Plex Mono, monospace" }, "unvalidated (h > " + vh + ")"));
   f.svg.appendChild(el("line", { x1: f.x(yearMax), x2: f.x(yearMax), y1: f.m.top, y2: f.H - f.m.bottom, stroke: "#b8bdc7", "stroke-dasharray": "3 3" }));
 
-  // ensemble band, split at validated boundary
-  const bandXs = fy, bandLo = lo.map(clamp), bandHi = hi.map(clamp);
-  addBand(f, bandXs.slice(0, splitIdx), bandLo.slice(0, splitIdx), bandHi.slice(0, splitIdx), "#2456c4", 0.18);
-  if (splitIdx < fy.length) {
-    addBand(f, bandXs.slice(splitIdx - 1), bandLo.slice(splitIdx - 1), bandHi.slice(splitIdx - 1), "#2456c4", 0.08);
+    // ensemble band, split at validated boundary
+    const bandXs = fy, bandLo = lo.map(clamp), bandHi = hi.map(clamp);
+    addBand(f, bandXs.slice(0, splitIdx), bandLo.slice(0, splitIdx), bandHi.slice(0, splitIdx), "#2456c4", 0.18);
+    if (splitIdx < fy.length) {
+      addBand(f, bandXs.slice(splitIdx - 1), bandLo.slice(splitIdx - 1), bandHi.slice(splitIdx - 1), "#2456c4", 0.08);
+    }
   }
 
   // history: one path per contiguous run, so gaps stay gaps
@@ -814,20 +840,24 @@ function drawTrajectory(fc, c) {
   });
 
   // persistence overlay: forecast segment's last observed value carried forward
-  if (anchor) {
+  if (anchor && f0) {
     const lastVal = clamp(anchor[1]);
     addLine(f, [[anchor[0], lastVal], [xmax, lastVal]], "#8a93a5", { width: 1.8, dash: "6 4" });
   }
 
   // model median: solid to validated horizon, dashed+faded beyond
-  const medPts = fy.map((y, i) => [y, clamp(med[i])]);
-  const bridge = anchor ? [[anchor[0], clamp(anchor[1])]] : [];
-  addLine(f, bridge.concat(medPts.slice(0, splitIdx)), "#2456c4", { width: 2.4 });
-  if (splitIdx < fy.length) {
-    addLine(f, medPts.slice(splitIdx - 1), "#2456c4", { width: 2, dash: "5 4", opacity: 0.55 });
+  if (f0) {
+    const medPts = fy.map((y, i) => [y, clamp(med[i])]);
+    const bridge = anchor ? [[anchor[0], clamp(anchor[1])]] : [];
+    addLine(f, bridge.concat(medPts.slice(0, splitIdx)), "#2456c4", { width: 2.4 });
+    if (splitIdx < fy.length) {
+      addLine(f, medPts.slice(splitIdx - 1), "#2456c4", { width: 2, dash: "5 4", opacity: 0.55 });
+    }
   }
 
-  $("traj-legend").innerHTML =
+  $("traj-legend").innerHTML = !f0
+    ? (hy.length ? `<span class="key"><span class="key-line" style="border-color:#16233b"></span>observed history</span>` : "")
+    :
     (hy.length ? `<span class="key"><span class="key-line" style="border-color:#16233b"></span>observed history</span>` : "") +
     `<span class="key"><span class="key-line" style="border-color:#2456c4"></span>model-implied median (h ≤ ${vh})</span>` +
     `<span class="key"><span class="key-line dashed" style="border-color:#2456c4;opacity:.6"></span>h > ${vh} <span class="badge badge-unvalidated">unvalidated</span></span>` +
@@ -835,6 +865,11 @@ function drawTrajectory(fc, c) {
     (hy.length ? `<span class="key"><span class="key-line dashed" style="border-color:#8a93a5"></span>persistence (last value carried forward)</span>` : "");
 
   const seg = c.segment_key !== S.trajCountry ? ` Series segment: ${c.segment_key}.` : "";
+  if (!f0) {
+    $("traj-note").textContent = SOURCE_ONLY_COPY +
+      (isStructural(node) ? " Effects onto it are not identified from within-country variation (low ICC)." : "") + seg;
+    return;
+  }
   $("traj-note").textContent =
     `Ensemble of seeds ${meta.seeds.join(", ")}; uncertainty is the ${meta.uncertainty}. ` +
     (isNative
@@ -855,6 +890,7 @@ function renderValidationBlock() {
     `</tbody></table>`;
   block.innerHTML =
     `<h3>Forecast validation</h3>` +
+    `<p class="validation-note">Forecast accuracy is benchmarked against persistence — the assumption that next year looks like this year. For institutional levels, persistence is hard to beat: these series change slowly, and no forecasting method tested here improves on it within five years. The model's contribution is in the structure it recovers — which relationships are necessary for forecast accuracy, how influence varies with democratic context, and how disturbances propagate — rather than in point forecasts.</p>` +
     `<p class="validation-note">${esc(v.note)}</p>` +
     `<div class="validation-tables">` +
     `<div><h4>All nodes (standardized)</h4>${tbl(v.all_nodes_normalized)}</div>` +
@@ -951,10 +987,15 @@ function renderMethods() {
         <dt>seed ensemble</dt><dd class="mono">${fmeta.seeds.join(", ")}</dd>
         <dt>horizon</dt><dd>${fmeta.horizon} years · validated through h = ${fmeta.validated_horizon}</dd>
         <dt>coverage</dt><dd>${fmeta.n_countries} countries · last observed year ${fmeta.year_max}</dd>
+        <dt>scope</dt><dd>${d.nodes.filter((n) => n.forecast !== false).length} endogenous nodes forecast${
+          d.nodes.filter((n) => n.forecast === false).length
+            ? ` · ${d.nodes.filter((n) => n.forecast === false).length} structural nodes neither forecast nor scored`
+            : ""}</dd>
         <dt>validation design</dt><dd>${fmeta.n_validation_segments} held-out segments · recency window ${fmeta.recency_years} years</dd>
         <dt>weights</dt><dd>${esc(fmeta.weights)}</dd>
         <dt>uncertainty</dt><dd>${esc(fmeta.uncertainty)}</dd>
       </dl>
+      <p>Only endogenous nodes are forecast. Structural (source-only) nodes are not fitted as targets, so they are neither projected forward nor scored; the Trajectories view shows their observed history alone. Accuracy figures below are computed over endogenous nodes only.</p>
       <p>Running the fitted system forward produces model-implied trajectories: where the estimated dynamics point if nothing outside the model intervenes. They are not predictions, and the portal never presents them as such. Accuracy is assessed on held-out segments against a persistence baseline — last observed value carried forward — which is a demanding benchmark for slow-moving institutional series.</p>
       <p><strong>The model does not beat persistence for level forecasts at validated horizons.</strong> The ratios in the validation table exceed 1. This is reported prominently rather than buried because the contribution of this work is conditional structure — which links operate, how they bend, and how their influence shifts over time — not point forecasting. Horizons 6 through 10 have not been scored at all and are drawn faded and labelled unvalidated.</p>
       <div class="prov">${esc(d.validation.note)}</div>
